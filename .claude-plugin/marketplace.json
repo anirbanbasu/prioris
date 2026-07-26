@@ -1,0 +1,17 @@
+{
+  "name": "prioris",
+  "owner": {
+    "name": "anirbanbasu",
+    "url": "https://github.com/anirbanbasu"
+  },
+  "description": "Prioris — search, fetch, and discuss prior art one at a time. Literature review and discussion only; does not draft or write manuscripts.",
+  "plugins": [
+    {
+      "name": "prioris",
+      "source": "./",
+      "description": "Search prior art over HTTPS, cache cleaned content and discussion notes as markdown, and discuss one item at a time against your working ideas.",
+      "version": "0.1.0",
+      "license": "MIT"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "prioris",
+  "version": "0.1.0",
+  "description": "Search, fetch, and discuss prior art one at a time — literature review and discussion only, never drafts or writes manuscripts for you.",
+  "author": {
+    "name": "anirbanbasu",
+    "url": "https://github.com/anirbanbasu"
+  },
+  "homepage": "https://github.com/anirbanbasu/prioris",
+  "repository": "https://github.com/anirbanbasu/prioris",
+  "license": "MIT",
+  "keywords": ["literature-review", "research", "academic", "papers", "mcp", "prior-art"]
+}
