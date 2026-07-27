@@ -1,15 +1,15 @@
 ---
 name: discuss
-description: "Search for, fetch, and discuss one academic paper (or other prior art) against your own research ideas — one item at a time. Fetches over HTTPS (HTML-first, PDF fallback), caches cleaned content and discussion notes as human-readable markdown under .prioris/. Triggers: discuss this paper, find papers about, what does this paper say about, how does this relate to my idea, literature review, related work, prior art. Out of scope: does NOT draft, outline, or write any part of a manuscript — for that, use a different tool."
+description: "Search for, fetch, and discuss one academic paper (or other prior art) against your own research ideas — one item at a time, via arXiv or Europe PMC. Caches cleaned content and discussion notes as human-readable markdown under .prioris/. Triggers: discuss this paper, find papers about, what does this paper say about, how does this relate to my idea, literature review, related work, prior art. Out of scope: does NOT draft, outline, or write any part of a manuscript — for that, use a different tool."
 metadata:
-  version: "0.2.0"
+  version: "0.1.0"
   status: active
   task_type: open-ended
 ---
 
 # Discuss
 
-See `../../shared/data-layout.md` for the scope boundary, `.prioris/` layout, frontmatter schema, and core MCP tool contracts shared by every skill in this plugin.
+See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, frontmatter schema, and core MCP tool contracts shared by every skill in this plugin.
 
 ## Why one paper at a time
 
@@ -17,11 +17,14 @@ Holding many full papers in context at once degrades comparison quality and burn
 
 ## Workflow
 
-1. **Search** — use the `search_papers` MCP tool to find candidates for the user's query. Present a short ranked list (title, authors, year, venue, one-line abstract snippet). Do not fetch full text yet.
+1. **Search** — pick the provider from the subject matter (biomedical → `research_europepmc_search`, everything else → `research_arxiv_search`; search both and merge if genuinely ambiguous). If the user instead handed you a raw identifier/URL of unclear provenance, call `research_resolve_identifier` first to determine provider and canonical identifier. Present a short ranked list (provider, title, authors, year, one-line abstract snippet). Do not fetch full text yet.
 2. **Select** — confirm with the user which single paper to open, unless they've already named one directly.
-3. **Fetch** — use `fetch_paper` (HTML source preferred; PDF extraction only as fallback) to retrieve and cache the paper under `.prioris/papers/<paper-id>.md`. If a fresh cached copy already exists, reuse it instead of re-fetching.
+3. **Fetch** — check `.prioris/papers/<provider>/<identifier>.md` first; if a cached copy already exists, reuse it instead of calling the MCP server again. Otherwise:
+   - **arXiv**: call `research_arxiv_fetch_full_text(arxiv_id, format="html")` (HTML preferred; retry with `format="pdf"` if HTML isn't available), then `research_arxiv_parse_full_text(arxiv_id, format)` to get the markdown.
+   - **Europe PMC**: call `research_europepmc_fetch_full_text(identifier)` (format is always `xml`), then `research_europepmc_parse_full_text(identifier)`. If this fails `format_unavailable`, Europe PMC has no full text for this item — say so and offer to discuss from the abstract/metadata only instead.
+   - Write the returned `markdown` plus frontmatter (including `resource_uri`) to `.prioris/papers/<provider>/<identifier>.md`.
 4. **Discuss** — read the *one* cached paper into context and discuss it against whatever idea or question the user brings: its claims, method, evidence, limitations, and how it relates to the user's stated idea (agreement, contradiction, gap, extension). Do not pull other papers' full text into this step — reference prior discussion notes (frontmatter/summary only) if relevant instead.
-5. **Record** — after a substantive discussion, write or update `.prioris/discussions/<paper-id>.md` with a concise synthesis (what the paper says, what was concluded, open questions) and set `read_at`. Ask before overwriting existing notes rather than silently clobbering them.
+5. **Record** — after a substantive discussion, write or update `.prioris/discussions/<provider>/<identifier>.md` with a concise synthesis (what the paper says, what was concluded, open questions) and set `read_at`. Ask before overwriting existing notes rather than silently clobbering them.
 
 ## Argument handling
 

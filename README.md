@@ -8,7 +8,7 @@ Existing research-assistant plugins tend to bundle discovery, writing, and revie
 
 ## How it works
 
-- Papers are found and fetched via a companion MCP server (HTML-preferred, PDF fallback), not generic web search — so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
+- Papers are found and fetched via a companion MCP server — arXiv (HTML-preferred, PDF fallback) and Europe PMC (JATS XML) — not generic web search, so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
 - Cached paper content and discussion notes are stored as plain markdown with YAML frontmatter under `.prioris/` in your project — human-readable, git-diffable, no database. `.prioris/papers/` is regenerable cache; `.prioris/discussions/` is your actual notes and should be versioned.
 - No vector index, graph index, or multi-paper context loading in this version — cross-paper synthesis is a deliberately deferred feature, to be built later on top of the same markdown store.
 - Each capability is its own skill under `skills/<name>/SKILL.md` (the official Claude Code plugin layout) — no separate `commands/` directory. A skill's folder name is both its auto-trigger unit and its explicit slash-invocation name.
@@ -40,7 +40,13 @@ This loads the plugin for the current session only — use it to iterate on `ski
 
 ## Requires
 
-The `prioris-mcp` server (separate project, not yet published) exposing `search_papers`, `fetch_paper`, and (for `rmotd`) `list_recent` tools. Until that's available, install manually and point `.mcp.json` at your local build.
+The [`prioris-mcp`](https://pypi.org/project/prioris-mcp/) server ([docs](https://docs-prioris-mcp.anirbanbasu.com/)), providing arXiv and Europe PMC search/fetch/parse tools plus identifier resolution — see `shared/data-layout.md` for the full contract this plugin relies on.
+
+```
+pip install prioris-mcp
+```
+
+Point `.mcp.json` at it per the server's docs.
 
 ## Scope
 
