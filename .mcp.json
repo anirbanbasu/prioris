@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "prioris-mcp": {
+            "command": "uvx",
+            "args": [
+                "prioris-mcp"
+            ]
+        }
+    }
+}

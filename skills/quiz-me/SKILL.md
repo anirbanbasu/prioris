@@ -23,4 +23,4 @@ This skill keeps the same out-of-scope boundary as the rest of the plugin: it pr
 
 ## Argument handling
 
-If invoked with `$ARGUMENTS` naming a paper id, title, or URL, use that paper — fetching it first via `discuss`'s flow if it isn't cached yet. Otherwise use whichever paper is already in context, or ask which one.
+If invoked with `$ARGUMENTS` naming a paper id, title, or URL, use that paper — fetching it first via `discuss`'s flow if it isn't cached yet. A title isn't a fetchable identifier: run it through `discuss`'s Search step (`research_arxiv_search` / `research_europepmc_search`) to find the paper first. A URL isn't accepted by any `prioris-mcp` tool either: extract the canonical identifier per `discuss`'s "Argument handling" section before fetching. Otherwise use whichever paper is already in context, or ask which one.

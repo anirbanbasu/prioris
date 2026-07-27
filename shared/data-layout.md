@@ -13,7 +13,7 @@ The companion MCP server (`prioris-mcp`, published at https://pypi.org/project/p
 - **`arxiv`** — preprints (CS, physics, math, stats, q-bio, etc.). Full text available as `pdf` or `html`.
 - **`europepmc`** — published biomedical/life-science literature. Full text, when available at all, is JATS `xml` only — no format choice.
 
-Pick the provider from the subject matter (biomedical → `europepmc`, everything else → `arxiv`). If genuinely ambiguous, search both and merge, labeling each result with its provider. If the user hands you a raw identifier or URL of unknown provenance (bare DOI, unlabeled id), call `research_resolve_identifier` first rather than guessing.
+Pick the provider from the subject matter (biomedical → `europepmc`, everything else → `arxiv`). If genuinely ambiguous, search both and merge, labeling each result with its provider. If the user hands you a bare DOI, or an identifier string whose provider isn't clear, call `research_resolve_identifier` first rather than guessing. If the user instead hands you a URL, `research_resolve_identifier` will not accept it directly — extract the canonical identifier yourself first (see "Argument handling" in `discuss`'s SKILL.md) and proceed with the provider-specific tools.
 
 ## Data layout
 
@@ -58,7 +58,7 @@ Every skill here assumes a companion MCP server (the `prioris-mcp` server, https
 - `research_europepmc_parse_full_text(identifier) -> {markdown, resource_uri}` — fails `not_found` if the id hasn't been fetched first
 
 **Cross-provider**
-- `research_resolve_identifier(identifier, format) -> {identifier, provider, resolved_url, format, full_text_available?}` — resolves an id/URL/DOI of unknown provider to its canonical form; standalone utility, not a required first step when the provider is already known.
+- `research_resolve_identifier(identifier, format) -> {identifier, provider, resolved_url, format, full_text_available?}` — resolves an arXiv id, a Europe PMC id/PMCID, or a DOI of unknown provider to its canonical form. Does **not** accept a URL — a bare DOI is resolved via a doi.org redirect (checked against an allowlisted domain before any further request), everything else is self-identifying by pattern with no network round-trip. Standalone utility, not a required first step when the provider is already known.
 
 **Resources** (read-only; never trigger a fetch or parse — read one that doesn't exist yet and you get a plain not-found, not an error):
 - `research://{provider}/{identifier}/{format}/fulltext` — persisted raw full text

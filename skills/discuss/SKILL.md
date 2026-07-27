@@ -17,10 +17,10 @@ Holding many full papers in context at once degrades comparison quality and burn
 
 ## Workflow
 
-1. **Search** — pick the provider from the subject matter (biomedical → `research_europepmc_search`, everything else → `research_arxiv_search`; search both and merge if genuinely ambiguous). If the user instead handed you a raw identifier/URL of unclear provenance, call `research_resolve_identifier` first to determine provider and canonical identifier. Present a short ranked list (provider, title, authors, year, one-line abstract snippet). Do not fetch full text yet.
+1. **Search** — pick the provider from the subject matter (biomedical → `research_europepmc_search`, everything else → `research_arxiv_search`; search both and merge if genuinely ambiguous). If the user instead handed you a bare DOI or an identifier of unclear provenance, call `research_resolve_identifier` first to determine provider and canonical identifier — see "Argument handling" below if what you have is a URL rather than a bare id/DOI. Present a short ranked list (provider, title, authors, year, one-line abstract snippet). Do not fetch full text yet.
 2. **Select** — confirm with the user which single paper to open, unless they've already named one directly.
 3. **Fetch** — check `.prioris/papers/<provider>/<identifier>.md` first; if a cached copy already exists, reuse it instead of calling the MCP server again. Otherwise:
-   - **arXiv**: call `research_arxiv_fetch_full_text(arxiv_id, format="html")` (HTML preferred; retry with `format="pdf"` if HTML isn't available), then `research_arxiv_parse_full_text(arxiv_id, format)` to get the markdown.
+   - **arXiv**: call `research_arxiv_fetch_full_text(arxiv_id, format="pdf")` (PDF preferred — arXiv's HTML rendering isn't available for every paper, especially older or figure-heavy ones; retry with `format="html"` if PDF isn't available), then `research_arxiv_parse_full_text(arxiv_id, format)` to get the markdown.
    - **Europe PMC**: call `research_europepmc_fetch_full_text(identifier)` (format is always `xml`), then `research_europepmc_parse_full_text(identifier)`. If this fails `format_unavailable`, Europe PMC has no full text for this item — say so and offer to discuss from the abstract/metadata only instead.
    - Write the returned `markdown` plus frontmatter (including `resource_uri`) to `.prioris/papers/<provider>/<identifier>.md`.
 4. **Discuss** — read the *one* cached paper into context and discuss it against whatever idea or question the user brings: its claims, method, evidence, limitations, and how it relates to the user's stated idea (agreement, contradiction, gap, extension). Do not pull other papers' full text into this step — reference prior discussion notes (frontmatter/summary only) if relevant instead.
@@ -29,3 +29,10 @@ Holding many full papers in context at once degrades comparison quality and burn
 ## Argument handling
 
 If invoked with `$ARGUMENTS` containing a paper identifier, URL, or search query, use it to skip straight to the Search/Fetch step. Otherwise ask what the user is looking for.
+
+No `prioris-mcp` tool accepts a raw URL as input — if `$ARGUMENTS` (or the user) hands you one, extract the canonical identifier yourself before calling anything:
+- arXiv landing/PDF/HTML URL (`arxiv.org/abs/...`, `/pdf/...`, `/html/...`) → the arXiv id is the path segment after `abs`/`pdf`/`html`; call the arXiv tools directly with it.
+- Europe PMC URL containing `/PMC<digits>` → that's the PMCID; call the Europe PMC tools directly with it.
+- Europe PMC URL of the form `/article/{source}/{id}` → canonical identifier is `{source}:{id}`.
+- `doi.org/...` URL, or any other DOI → pass the bare DOI (e.g. `10.1234/...`, not the URL) to `research_resolve_identifier`, which resolves it via a doi.org redirect.
+- Anything else → say you can't resolve that URL and ask for a paper id, DOI, or search terms instead.

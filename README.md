@@ -8,7 +8,7 @@ Existing research-assistant plugins tend to bundle discovery, writing, and revie
 
 ## How it works
 
-- Papers are found and fetched via a companion MCP server — arXiv (HTML-preferred, PDF fallback) and Europe PMC (JATS XML) — not generic web search, so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
+- Papers are found and fetched via a companion MCP server — arXiv (PDF-preferred, HTML fallback) and Europe PMC (JATS XML) — not generic web search, so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
 - Cached paper content and discussion notes are stored as plain markdown with YAML frontmatter under `.prioris/` in your project — human-readable, git-diffable, no database. `.prioris/papers/` is regenerable cache; `.prioris/discussions/` is your actual notes and should be versioned.
 - No vector index, graph index, or multi-paper context loading in this version — cross-paper synthesis is a deliberately deferred feature, to be built later on top of the same markdown store.
 - Each capability is its own skill under `skills/<name>/SKILL.md` (the official Claude Code plugin layout) — no separate `commands/` directory. A skill's folder name is both its auto-trigger unit and its explicit slash-invocation name.
@@ -17,7 +17,7 @@ Existing research-assistant plugins tend to bundle discovery, writing, and revie
 
 Each skill below is auto-triggered by Claude when relevant, and also explicitly invocable:
 
-- `/prioris:discuss [paper id, URL, or search query]` — search, fetch, and discuss one paper at a time against your working ideas.
+- `/prioris:discuss [paper id, DOI, or search query]` — search, fetch, and discuss one paper at a time against your working ideas.
 - `/prioris:quiz-me [paper id]` — quiz yourself on a paper already opened (or named), grounded only in its actual text.
 - `/prioris:rmotd [category] [n]` — abstracts-only digest (default 7, keep within 5–10) of recent items in one or more categories. No full-text fetch.
 
@@ -42,11 +42,7 @@ This loads the plugin for the current session only — use it to iterate on `ski
 
 The [`prioris-mcp`](https://pypi.org/project/prioris-mcp/) server ([docs](https://docs-prioris-mcp.anirbanbasu.com/)), providing arXiv and Europe PMC search/fetch/parse tools plus identifier resolution — see `shared/data-layout.md` for the full contract this plugin relies on.
 
-```
-pip install prioris-mcp
-```
-
-Point `.mcp.json` at it per the server's docs.
+This plugin bundles a `.mcp.json` that launches it via [`uvx`](https://docs.astral.sh/uv/guides/tools/), so there's nothing to install ahead of time — `uvx` fetches and runs `prioris-mcp` from PyPI on first use. You only need `uv` itself available on your `PATH`.
 
 ## Scope
 
