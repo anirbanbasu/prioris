@@ -7,7 +7,7 @@ Referenced by `discuss` and `quick-read`. Assumes a companion MCP server (the `p
 - `research_arxiv_fetch_metadata(arxiv_ids: []) -> {results: [...], not_found: [...]}`
 - `research_arxiv_fetch_full_text(arxiv_id, format: "pdf"|"html") -> {location, format, size_bytes, served_from_storage, resource_uri}`
 - `research_arxiv_parse_full_text(arxiv_id, format, offset=0, limit=None) -> {markdown, offset, limit, total_length, has_more, resource_uri}` — fails `not_found` if the id hasn't been fetched first. Paginated — see "Paging through full text" below.
-- `research_arxiv_list_top_n(category, n) -> results[]` — most recent items in an arXiv taxonomy code (e.g. `cs.CL`)
+- `research_arxiv_list_top_n(include_categories, n, exclude_categories?) -> results[]` — most recent items across one or more arXiv taxonomy codes (`include_categories` combined with AND, optional `exclude_categories` combined with ANDNOT), e.g. `cs.CL`
 
 **Europe PMC**
 - `research_europepmc_search(query, page_size=25, cursor_mark="*") -> {results: [...], next_cursor_mark}` (each: `identifier, pmid?, pmcid?, doi?, title, abstract?, authors[{full_name, first_name, last_name, initials}], journal, pub_year, is_open_access, license?, full_text_available`)
@@ -21,6 +21,7 @@ Referenced by `discuss` and `quick-read`. Assumes a companion MCP server (the `p
 **Resources** (read-only; never trigger a fetch or parse — read one that doesn't exist yet and you get a plain not-found, not an error):
 - `research://{provider}/{identifier}/{format}/fulltext` — persisted raw full text, returned whole (not paginated)
 - `research://{provider}/{identifier}/{format}/markdown{?offset,limit}` — persisted parsed markdown, one page at a time: `{markdown, offset, limit, total_length, has_more}`. Paginated identically to `parse_full_text` below (same params, same shape minus `resource_uri`, since the read is already keyed by that URI).
+- `research://arxiv/categories` — arXiv's queryable category codes and names, returned whole (not paginated). Read this to look up or confirm a taxonomy code (e.g. for `research_arxiv_search`'s `cat:` syntax or `research_arxiv_list_top_n`'s `include_categories`/`exclude_categories`) rather than guessing one from memory.
 
 In practice you rarely need to read a resource explicitly: `parse_full_text` already returns a `markdown` page inline, plus the `resource_uri` for re-reading it later (e.g. a fresh session, or a different skill) without re-parsing. The two-step fetch → parse pattern is universal across both providers — always fetch before parse; parse fails `not_found` otherwise.
 
