@@ -22,7 +22,8 @@ arXiv-only for now: Europe PMC's search tool has no recency sort, so there is no
 1. Determine category or categories — ask if not specified. arXiv organizes by taxonomy code (e.g. `cs.CL`, `cs.AI`, `cs.LG`, `stat.ML`, `q-bio.NC`); help translate a plain-language topic into the right code.
 2. Determine n — default 7 if unspecified, keep within 5–10 unless the user asks otherwise.
 3. Call `research_arxiv_list_top_n(category, n)` once per requested category.
-4. Present a compact list per category: title, authors, submission date (`published`), the abstract in full, and the `arxiv_id` — no full text is fetched or written to `.prioris/papers/` at this stage.
+4. Present a compact list per category: title, authors, submission date (`published`), and the `arxiv_id` — no full text is fetched or written to `.prioris/papers/` at this stage.
+   - Always include the abstract. If it's 300 words or fewer, show it verbatim, unedited. Only when it runs longer than 300 words, condense it to a 300-word (or shorter) summary that preserves the paper's own claims and terminology rather than a generic paraphrase — this keeps long abstracts (common in physics/math preprints) from dominating the digest while still surfacing every item's content.
 5. If the user wants to go deeper on one of the listed items, hand off to `discuss` (or `quiz-me`) using that item's `arxiv_id`. Don't fetch full text here.
 
 ## MCP dependency (in addition to shared)
