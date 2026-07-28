@@ -1,14 +1,16 @@
 # prioris
 
-Search, fetch, and discuss prior art — one at a time — against the ideas you're working on. Deliberately scoped to **literature review and discussion only**; it will not draft, outline, or write any part of a manuscript for you.
+Search, fetch, and discuss prior art — one at a time — against the ideas you're working on. Deliberately scoped to **literature review and discussion only**; it will _**not**_ draft, outline, or write any part of a manuscript, that you may need to create, for you.
 
 ## Why
 
 Existing research-assistant plugins tend to bundle discovery, writing, and review into one large pipeline. `prioris` does one thing: help you actually understand and think about a paper in relation to your own work, one paper at a time, without blowing out the context window on a whole corpus.
 
+The one paper at a time approach is deliberate: it forces you to engage with the paper's content, rather than just skim abstracts or rely on AI-generated summaries. As the discussion is saved to persistent storage, you should clear the context window or start a new agentic session when switching between papers. This is particularly helpful with context window sizes between 128K and 256K tokens, in open-weight models that you can run locally. Context window sizes less than 128K tokens are not recommended for this plugin, as they will not allow you to discuss a paper in depth.
+
 ## How it works
 
-- Papers are found and fetched via a companion MCP server — arXiv (PDF-preferred, HTML fallback) and Europe PMC (JATS XML) — not generic web search, so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
+- Papers are found and fetched via a companion MCP server (the [`prioris-mcp`](https://github.com/anirbanbasu/prioris-mcp)) — arXiv (PDF-preferred, HTML fallback) and Europe PMC (JATS XML) — not generic web search, so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
 - Cached paper content and discussion notes are stored as plain markdown with YAML frontmatter under `.prioris/` in your project — human-readable, git-diffable, no database. `.prioris/papers/` is regenerable cache; `.prioris/discussions/` is your actual notes and should be versioned.
 - No vector index, graph index, or multi-paper context loading in this version — cross-paper synthesis is a deliberately deferred feature, to be built later on top of the same markdown store.
 - Each capability is its own skill under `skills/<name>/SKILL.md` (the official Claude Code plugin layout) — no separate `commands/` directory. A skill's folder name is both its auto-trigger unit and its explicit slash-invocation name.
