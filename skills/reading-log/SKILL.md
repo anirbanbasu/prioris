@@ -9,7 +9,7 @@ metadata:
 
 # Reading Log
 
-See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, and frontmatter schema shared by every skill in this plugin. Unlike the other skills here, `reading-log` needs none of the shared MCP tool contracts — see "No MCP dependency" below.
+See `../../shared/scope.md` for the scope boundary shared by every skill in this plugin, and `../../shared/data-layout.md` for providers, `.prioris/` layout, and frontmatter schema. Unlike the other skills here, `reading-log` needs none of the shared MCP tool contracts (`../../shared/mcp-contracts.md`) — see "No MCP dependency" below.
 
 ## Scope
 

@@ -9,7 +9,7 @@ metadata:
 
 # Quick Read
 
-See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, frontmatter schema, core MCP tool contracts, and the tool constraint (`prioris-mcp` only for anything it covers — no built-in web search/fetch as a substitute) shared by every skill in this plugin.
+See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, and `../../shared/mcp-contracts.md` for the core MCP tool contracts — all shared by every skill in this plugin.
 
 ## Scope
 
@@ -34,4 +34,4 @@ A fast, structured single-pass summary of one paper's full text — not a discus
 
 ## Argument handling
 
-If invoked with `$ARGUMENTS` naming a paper id, title, or URL, use it to skip straight to the Search/Select step — same rules as `discuss`'s "Argument handling" section, including URL canonicalization (arXiv landing/PDF/HTML URLs, Europe PMC `/PMC<digits>` or `/article/{source}/{id}` URLs, and DOIs via `research_resolve_identifier`). Otherwise ask which paper to summarize.
+If invoked with `$ARGUMENTS` naming a paper id, title, or URL, use it to skip straight to the Search/Select step. If it's a URL, see `../../shared/url-handling.md` for how to extract the canonical identifier first. Otherwise ask which paper to summarize.

@@ -41,7 +41,7 @@ This loads the plugin for the current session only — use it to iterate on `ski
 
 ## Requires
 
-The [`prioris-mcp`](https://pypi.org/project/prioris-mcp/) server ([docs](https://docs-prioris-mcp.anirbanbasu.com/)), providing arXiv and Europe PMC search/fetch/parse tools plus identifier resolution — see `shared/data-layout.md` for the full contract this plugin relies on.
+The [`prioris-mcp`](https://pypi.org/project/prioris-mcp/) server ([docs](https://docs-prioris-mcp.anirbanbasu.com/)), providing arXiv and Europe PMC search/fetch/parse tools plus identifier resolution — see `shared/mcp-contracts.md` for the full contract this plugin relies on.
 
 This plugin bundles a `.mcp.json` that launches it via [`uvx`](https://docs.astral.sh/uv/guides/tools/), so there's nothing to install ahead of time — `uvx` fetches and runs `prioris-mcp` from PyPI on first use. You only need `uv` itself available on your `PATH`.
 

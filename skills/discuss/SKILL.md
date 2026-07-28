@@ -9,7 +9,7 @@ metadata:
 
 # Discuss
 
-See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, frontmatter schema, core MCP tool contracts, and the tool constraint (`prioris-mcp` only for anything it covers — no built-in web search/fetch as a substitute) shared by every skill in this plugin.
+See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, and `../../shared/mcp-contracts.md` for the core MCP tool contracts — all shared by every skill in this plugin.
 
 ## Why one paper at a time
 
@@ -30,9 +30,4 @@ Holding many full papers in context at once degrades comparison quality and burn
 
 If invoked with `$ARGUMENTS` containing a paper identifier, URL, or search query, use it to skip straight to the Search/Fetch step. Otherwise ask what the user is looking for.
 
-No `prioris-mcp` tool accepts a raw URL as input — if `$ARGUMENTS` (or the user) hands you one, extract the canonical identifier yourself before calling anything:
-- arXiv landing/PDF/HTML URL (`arxiv.org/abs/...`, `/pdf/...`, `/html/...`) → the arXiv id is the path segment after `abs`/`pdf`/`html`; call the arXiv tools directly with it.
-- Europe PMC URL containing `/PMC<digits>` → that's the PMCID; call the Europe PMC tools directly with it.
-- Europe PMC URL of the form `/article/{source}/{id}` → canonical identifier is `{source}:{id}`.
-- `doi.org/...` URL, or any other DOI → pass the bare DOI (e.g. `10.1234/...`, not the URL) to `research_resolve_identifier`, which resolves it via a doi.org redirect.
-- Anything else → say you can't resolve that URL and ask for a paper id, DOI, or search terms instead.
+If `$ARGUMENTS` (or the user) hands you a URL, see `../../shared/url-handling.md` for how to extract the canonical identifier before calling anything — no `prioris-mcp` tool accepts a raw URL as input.

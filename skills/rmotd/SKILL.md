@@ -9,7 +9,7 @@ metadata:
 
 # RMOTD (Research Message of the Day)
 
-See `../../shared/data-layout.md` for the scope boundary shared by this plugin (discovery digest, not synthesis or review), and the tool constraint (`prioris-mcp` only for anything it covers — no built-in web search/fetch as a substitute).
+See `../../shared/scope.md` for the scope boundary shared by this plugin (discovery digest, not synthesis or review) and the tool constraint (`prioris-mcp` only for anything it covers — no built-in web search/fetch as a substitute).
 
 ## Scope
 
