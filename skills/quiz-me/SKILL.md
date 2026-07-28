@@ -9,7 +9,7 @@ metadata:
 
 # Quiz Me
 
-See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, and core MCP tool contracts. This skill reuses the existing cache — no MCP tool beyond the fetch/parse pair (via `discuss`) is required.
+See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, core MCP tool contracts, and the tool constraint (`prioris-mcp` only for anything it covers — no built-in web search/fetch as a substitute). This skill reuses the existing cache — no MCP tool beyond the fetch/parse pair (via `discuss`) is required.
 
 ## Workflow
 

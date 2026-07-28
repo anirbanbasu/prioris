@@ -9,7 +9,7 @@ metadata:
 
 # Discuss
 
-See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, frontmatter schema, and core MCP tool contracts shared by every skill in this plugin.
+See `../../shared/data-layout.md` for the scope boundary, providers, `.prioris/` layout, frontmatter schema, core MCP tool contracts, and the tool constraint (`prioris-mcp` only for anything it covers — no built-in web search/fetch as a substitute) shared by every skill in this plugin.
 
 ## Why one paper at a time
 

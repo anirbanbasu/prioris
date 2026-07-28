@@ -18,6 +18,7 @@ Existing research-assistant plugins tend to bundle discovery, writing, and revie
 Each skill below is auto-triggered by Claude when relevant, and also explicitly invocable:
 
 - `/prioris:discuss [paper id, DOI, or search query]` — search, fetch, and discuss one paper at a time against your working ideas.
+- `/prioris:quick-read [paper id, DOI, or search query]` — one-shot structured summary of a paper's full text: research gap/questions, background, key assumptions, findings, conclusions, shortcomings, and future directions.
 - `/prioris:quiz-me [paper id]` — quiz yourself on a paper already opened (or named), grounded only in its actual text.
 - `/prioris:rmotd [category] [n]` — abstracts-only digest (default 7, keep within 5–10) of recent items in one or more categories. No full-text fetch.
 
