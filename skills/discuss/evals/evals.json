@@ -1,0 +1,46 @@
+{
+  "skill_name": "discuss",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Find me a recent paper on retrieval augmented generation for reducing hallucination in code review comments, and let's discuss it against my idea of using RAG over a project's own commit history to ground review suggestions.",
+      "expected_output": "Searches via research_arxiv_search, presents a short ranked list (provider, title, authors, year, one-line abstract snippet) without fetching full text yet, confirms which single paper to open, then fetches/parses it, discusses it against the user's stated idea, and records a discussion note.",
+      "files": [],
+      "expectations": [
+        "Uses research_arxiv_search (not a built-in web search tool) to find candidates",
+        "Presents a ranked list of candidates before fetching any full text",
+        "Confirms with the user which single paper to open before calling a fetch tool",
+        "Checks for an existing .prioris/papers/arxiv/<identifier>.md cache before calling research_arxiv_fetch_full_text",
+        "Discussion explicitly relates the paper's claims, method, or limitations to the user's stated RAG-over-commit-history idea",
+        "Writes or updates .prioris/discussions/arxiv/<identifier>.md after the discussion, asking before overwriting if a note already exists",
+        "Does not draft, outline, or write manuscript prose at any point"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have this paper: arXiv 2401.12345v2. Let's talk about whether its evaluation methodology is sound compared to what I'm doing in my thesis on federated learning privacy.",
+      "expected_output": "Skips search/select since the identifier is already given, checks cache first, fetches and parses via the arXiv PDF-preferred path if not cached, and discusses the paper's methodology only in relation to the user's stated thesis topic.",
+      "files": [],
+      "expectations": [
+        "Does not perform a search step since a specific identifier was already provided",
+        "Checks .prioris/papers/arxiv/2401.12345v2.md for a cached copy before calling any MCP fetch tool",
+        "If not cached, calls research_arxiv_fetch_full_text with format=pdf before falling back to html",
+        "Loops on has_more when calling research_arxiv_parse_full_text rather than treating the first page as the whole paper",
+        "Discussion of evaluation methodology is grounded only in the paper's actual text, not invented details",
+        "Does not pull any other paper's full text into the discussion"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Can you help me discuss this Europe PMC paper PMC1234567 about CRISPR off-target effects? I'm building a similar off-target prediction model and want to know how their validation compares to mine.",
+      "expected_output": "Uses the Europe PMC fetch/parse tool pair (XML only), and if full text isn't available, offers to discuss from abstract/metadata only instead of failing silently or substituting a web fetch.",
+      "files": [],
+      "expectations": [
+        "Uses research_europepmc_fetch_full_text and research_europepmc_parse_full_text rather than arXiv tools",
+        "Does not pass a format parameter choice for Europe PMC beyond the fixed xml format",
+        "If fetch fails with format_unavailable, explicitly offers to continue from abstract/metadata only rather than silently stopping",
+        "Never substitutes a built-in web search/fetch tool for the prioris-mcp calls"
+      ]
+    }
+  ]
+}

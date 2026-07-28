@@ -1,0 +1,43 @@
+{
+  "skill_name": "quick-read",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Give me a quick read of arXiv 2403.05131 — I want the tl;dr before deciding if it's worth a deep dive.",
+      "expected_output": "A structured summary under exactly the seven required headers, in order, grounded only in the paper's actual text, followed by a write-back of the Quick read section to the discussion note.",
+      "files": [],
+      "expectations": [
+        "Output uses the seven headers in order: Research gap / question(s), Background, Key assumptions, Findings, Conclusions, Shortcomings, Future directions",
+        "Checks .prioris/papers/arxiv/2403.05131.md for a cache before calling any fetch tool",
+        "If a section genuinely doesn't apply, says so briefly rather than fabricating content",
+        "Appends or updates a 'Quick read' section in .prioris/discussions/arxiv/2403.05131.md using the same seven headers",
+        "Sets read_at in the discussion note's frontmatter if not already set",
+        "Asks before overwriting an existing quick-read entry for this paper"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Search for a paper about vision transformers for medical image segmentation and quick-read it for me.",
+      "expected_output": "Runs a Search/Select step like discuss (ranked candidate list, confirm which paper) before fetching, picking a provider consistent with the plugin's subject-matter routing rule and stating which provider it used.",
+      "files": [],
+      "expectations": [
+        "Presents a ranked list of candidates (provider, title, authors, year, abstract snippet) before fetching full text",
+        "Confirms with the user which single paper to open, unless one is already unambiguous",
+        "Does not fetch full text during the search/select step",
+        "States or implies which provider (arxiv vs europepmc) it searched, consistent with the plugin's routing rule rather than silently picking one"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Quick summary of this paper: https://arxiv.org/abs/2401.09876",
+      "expected_output": "Extracts the canonical arXiv identifier from the URL before calling any tool, then goes straight to fetch (skipping search/select since the paper is already named), and produces the standard seven-header summary.",
+      "files": [],
+      "expectations": [
+        "Does not pass the raw URL to any prioris-mcp tool call",
+        "Extracts identifier 2401.09876 from the URL before fetching",
+        "Skips the search/select step since a specific paper was already named",
+        "Produces the same seven-header structure as a directly-named-id request"
+      ]
+    }
+  ]
+}

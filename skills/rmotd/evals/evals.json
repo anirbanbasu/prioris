@@ -1,0 +1,40 @@
+{
+  "skill_name": "rmotd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What's new in cs.CL today? Give me like 5 papers.",
+      "expected_output": "Calls research_arxiv_list_top_n for cs.CL with n=5, presents a compact list (title, authors, submission date, arxiv_id) with abstracts, and fetches no full text.",
+      "files": [],
+      "expectations": [
+        "Calls research_arxiv_list_top_n with include_categories=[\"cs.CL\"] and n=5",
+        "Each listed item shows title, authors, submission date (published), and arxiv_id",
+        "Every item's abstract is shown, verbatim if 300 words or fewer, condensed to 300 words or fewer otherwise",
+        "No full text is fetched or written to .prioris/papers/ at any point"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Give me separate digests for cs.LG and stat.ML, but exclude anything already in stat.ML from the cs.LG one.",
+      "expected_output": "Two separate per-category digests via two separate research_arxiv_list_top_n calls, with the cs.LG call excluding stat.ML, using the default count since none was specified.",
+      "files": [],
+      "expectations": [
+        "Makes two separate research_arxiv_list_top_n calls, one for cs.LG and one for stat.ML, rather than one combined intersection call",
+        "The cs.LG call passes exclude_categories=[\"stat.ML\"]",
+        "Uses the default n=7 since no count was specified",
+        "Presents the two digests separately rather than merging them into one list"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Daily digest for q-bio.NC — what's trending?",
+      "expected_output": "Treats 'trending' as 'most recent' (arXiv has no citation/trending signal), uses the default count, and does not fabricate any ranking metric.",
+      "files": [],
+      "expectations": [
+        "Calls research_arxiv_list_top_n with include_categories=[\"q-bio.NC\"] and the default n=7",
+        "Does not present or invent a citation count, trending score, or popularity ranking",
+        "Notes, plainly, that results are ordered by recency rather than a trending signal since arXiv doesn't expose one"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "skill_name": "quiz-me",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Quiz me on arXiv 2401.12345, one question at a time.",
+      "expected_output": "Fetches/uses the cached paper, asks one question at a time waiting for the user's answer before revealing the correct one, gives brief feedback grounded in the text, and appends quiz notes at the end.",
+      "files": [],
+      "expectations": [
+        "Uses the cached copy at .prioris/papers/arxiv/2401.12345.md if present, otherwise runs discuss's fetch flow first",
+        "Asks only one question before waiting for a response, not multiple questions at once",
+        "Does not reveal the correct answer before the user responds",
+        "Feedback after each answer references the relevant part of the paper rather than a full re-explanation",
+        "Questions mix recall, comprehension, and application rather than being all one type",
+        "At the end, appends a 'Quiz notes' entry to .prioris/discussions/arxiv/2401.12345.md summarizing concepts handled well vs. struggled with, asking before overwriting a prior entry"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "quiz me on this paper",
+      "expected_output": "With no paper named and nothing established in context, asks which cached paper to use rather than guessing or fabricating one.",
+      "files": [],
+      "expectations": [
+        "Does not invent or assume a specific paper without confirmation",
+        "Asks the user which cached paper to use, optionally referencing what's under .prioris/papers/<provider>/",
+        "Does not call any prioris-mcp search or fetch tool before a paper is identified"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Quiz me on the paper titled 'Attention Is All You Need'.",
+      "expected_output": "Treats the title as not directly fetchable — runs a search step to resolve it to a canonical identifier before proceeding, rather than passing the title straight to a fetch tool.",
+      "files": [],
+      "expectations": [
+        "Does not call a fetch/parse tool using the raw title as an identifier",
+        "Runs research_arxiv_search (or the appropriate provider search) to resolve the title to a canonical identifier first",
+        "Proceeds to quiz only after resolving and fetching/caching the paper"
+      ]
+    }
+  ]
+}
