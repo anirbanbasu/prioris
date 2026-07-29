@@ -9,7 +9,7 @@ metadata:
 
 # Quiz Me
 
-See `../../shared/scope.md` for the scope boundary and tool constraint shared by every skill in this plugin. This skill reuses the existing cache — no MCP tool beyond the fetch/parse pair (via `discuss`) is required.
+See `../../shared/scope.md` for the scope boundary and tool constraint shared by every skill in this plugin, and `../../shared/data-layout.md` for the `.prioris/` layout and frontmatter (including the `source_path` field a local file's cache entry carries). This skill reuses the existing cache — no MCP tool beyond the fetch/parse pair (via `discuss`) is required, and that holds for local files too: `quiz-me` never calls `research_localfile_fetch_full_text` itself (see Argument handling below).
 
 ## Workflow
 
@@ -24,3 +24,5 @@ This skill keeps the same out-of-scope boundary as the rest of the plugin: it pr
 ## Argument handling
 
 If invoked with `$ARGUMENTS` naming a paper id, title, or URL, use that paper — fetching it first via `discuss`'s flow if it isn't cached yet. A title isn't a fetchable identifier: run it through `discuss`'s Search step (`research_arxiv_search` / `research_europepmc_search`) to find the paper first. A URL isn't accepted by any `prioris-mcp` tool either: see `../../shared/url-handling.md` for how to extract the canonical identifier before fetching. Otherwise follow step 1 above: confirm the paper explicitly rather than assuming one from context.
+
+If `$ARGUMENTS` (or the user) instead names a local file directly (e.g. via `@file`), resolve it purely by inspection of the local cache — never call `research_localfile_fetch_full_text` from within `quiz-me`. Look for a `.prioris/papers/localfile/*.md` file whose frontmatter `source_path` matches the given path exactly. If one matches, quiz from it as usual. If none does, the file hasn't been fetched (and hashed/cached) yet — tell the user to run `discuss` or `quick-read` on it first, then retry, rather than fetching it yourself.

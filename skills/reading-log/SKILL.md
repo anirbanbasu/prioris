@@ -21,8 +21,8 @@ Keep it cheap: read the (already condensed) discussion notes, not the full cache
 
 All filters are optional and combine with AND when more than one is given. If none are given, list every cached discussion.
 
-- **provider** — `arxiv`, `europepmc`, or both (default: both). Restricts which `.prioris/discussions/<provider>/` subdirectories are scanned.
-- **ids** — one or more canonical identifiers (or a title/URL the user expects to already be cached — resolve it to an identifier by inspection of cached frontmatter, not by calling `research_resolve_identifier` or any search tool). Keep only files whose frontmatter `identifier` matches. Any requested id that matches no cached file is reported by name as not cached — do not fetch it.
+- **provider** — `arxiv`, `europepmc`, `localfile`, or any combination (default: all). Restricts which `.prioris/discussions/<provider>/` subdirectories are scanned.
+- **ids** — one or more canonical identifiers (or a title/URL the user expects to already be cached — resolve it to an identifier by inspection of cached frontmatter, not by calling `research_resolve_identifier` or any search tool). Keep only files whose frontmatter `identifier` matches. A local file path (e.g. as given via `@file`) is also accepted here: for `provider: localfile` entries, match it against the frontmatter `source_path` field instead of `identifier` (see `../../shared/data-layout.md`) — an exact string match on the path as given, not a filesystem hash or existence check. Any requested id (or local path) that matches no cached file is reported by name as not cached — do not fetch it, and for a local path specifically, do not re-hash the file to check either; that would call `research_localfile_fetch_full_text`, which this skill never does (see "No MCP dependency" below).
 - **date range** — on `read_at` frontmatter (fall back to `fetched_at`, then file mtime, if `read_at` is absent). Accepts natural language ("last week", "since June", "in July 2026") — convert relative phrases to absolute dates using the current date before filtering.
 - **keywords** — one or more terms, matched case-insensitively against `title`, `tags`, and the discussion note body (e.g. the "Quick read" section). Multiple keywords are ANDed by default unless the user asks for "any of" / OR. A keyword matching nothing is reported as a zero-result filter, not a cue to search externally.
 
@@ -38,8 +38,8 @@ All filters are optional and combine with AND when more than one is given. If no
 
 ## No MCP dependency
 
-This skill performs no `prioris-mcp` calls at all — only local file reads under `.prioris/discussions/`. If asked to filter by something not yet in the cache, do not fall back to `discuss`'s search/fetch flow from within `reading-log`; tell the user it isn't cached and let them invoke `discuss` (or `quick-read`) themselves if they want to add it.
+This skill performs no `prioris-mcp` calls at all — only local file reads under `.prioris/discussions/`. If asked to filter by something not yet in the cache, do not fall back to `discuss`'s search/fetch flow from within `reading-log`; tell the user it isn't cached and let them invoke `discuss` (or `quick-read`) themselves if they want to add it. This applies to a local file path given as an `ids` filter exactly as it does to any other identifier: `reading-log` matches it against already-cached `source_path` frontmatter and nothing else — it never calls `research_localfile_fetch_full_text` to check the file's current content, so a matching path is reported purely on the strength of the stored string, not a fresh hash.
 
 ## Argument handling
 
-If invoked with `$ARGUMENTS` containing filter language (a provider name, one or more identifiers, a date phrase, or keywords/topics, in any combination or free-text mix), parse it into the filters above and go straight to the Workflow. Otherwise list everything cached, most recent first.
+If invoked with `$ARGUMENTS` containing filter language (a provider name, one or more identifiers or local file paths, a date phrase, or keywords/topics, in any combination or free-text mix), parse it into the filters above and go straight to the Workflow. Otherwise list everything cached, most recent first.

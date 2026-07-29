@@ -1,6 +1,6 @@
 # Shared: Scope and Tool Constraint
 
-Referenced by every skill in this plugin (`../skills/discuss`, `../skills/quick-read`, `../skills/quiz-me`, `../skills/reading-log`, `../skills/rmotd`).
+Referenced by every skill in this plugin (`../skills/discuss`, `../skills/quick-read`, `../skills/quiz-me`, `../skills/reading-log`, `../skills/rmotd`, `../skills/manage-storage`).
 
 ## Scope (applies to every skill in this plugin)
 

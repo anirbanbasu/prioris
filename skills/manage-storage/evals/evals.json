@@ -1,0 +1,44 @@
+{
+  "skill_name": "manage-storage",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What's stored on the prioris-mcp server right now? I just want to see what's taking up space, not delete anything yet.",
+      "expected_output": "Calls research_list_fetched with no filters, presents entries grouped by (provider, identifier) rather than as a flat per-format list, and stops there without deleting or asking to delete anything.",
+      "files": [],
+      "expectations": [
+        "Calls research_list_fetched (not research_delete_fetched)",
+        "Does not restrict provider or format since none was requested",
+        "Groups or pairs a single item's pdf/xml and pdf-markdown/xml-markdown entries together in the presentation rather than listing them as unrelated rows",
+        "Does not propose or perform any deletion, since the user explicitly said not yet"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Delete arxiv 2401.12345v2 from storage, I don't need it anymore.",
+      "expected_output": "Looks up every stored entry matching that identifier across all its formats (not just one), lists the exact (provider, identifier, format) entries about to be removed, gets explicit confirmation, then calls research_delete_fetched with all of them in one call and reports deleted vs not_found.",
+      "files": [],
+      "expectations": [
+        "Identifies both the raw format entry (e.g. pdf) and the markdown-derived entry (e.g. pdf-markdown) for this identifier, not just one",
+        "Shows the exact set of (provider, identifier, format) entries before calling research_delete_fetched",
+        "Gets explicit confirmation before calling research_delete_fetched rather than treating the initial request as sufficient confirmation",
+        "Calls research_delete_fetched once with all matching entries rather than one call per format",
+        "Reports which entries were deleted and which (if any) were not_found, without treating not_found as an error"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Clear out anything in local file storage older than 30 days.",
+      "expected_output": "Converts 'older than 30 days' to an absolute cutoff date using the current date, calls research_list_fetched(provider='localfile') to find candidates, filters client-side by fetched_at, confirms the exact entries before deleting, and after deletion separately offers to clean up matching .prioris/papers/ files while explicitly flagging (and defaulting to keep) any matching .prioris/discussions/ notes.",
+      "files": [],
+      "expectations": [
+        "Converts 'older than 30 days' to an absolute date cutoff using the current date before filtering",
+        "Restricts research_list_fetched to provider='localfile'",
+        "Filters candidates by fetched_at client-side (since research_list_fetched has no date filter of its own) rather than assuming the tool filters by age",
+        "Lists the exact (provider, identifier, format) entries about to be removed and gets explicit confirmation before calling research_delete_fetched",
+        "After deleting, offers (rather than silently performing) to remove matching .prioris/papers/localfile/<id>.md files",
+        "If a matching .prioris/discussions/localfile/<id>.md exists, explicitly calls it out and defaults to recommending it be kept rather than deleted"
+      ]
+    }
+  ]
+}

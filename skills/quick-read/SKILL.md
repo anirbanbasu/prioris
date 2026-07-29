@@ -9,7 +9,7 @@ metadata:
 
 # Quick Read
 
-See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, and `../../shared/mcp-contracts.md` for the core MCP tool contracts — all shared by every skill in this plugin.
+See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, `../../shared/mcp-contracts.md` for the core MCP tool contracts, and `../../shared/local-file-handling.md` for the `@file` workflow — all shared by every skill in this plugin.
 
 ## Scope
 
@@ -17,8 +17,8 @@ A fast, structured single-pass summary of one paper's full text — not a discus
 
 ## Workflow
 
-1. **Search/Select** — identical to `discuss`'s Search and Select steps: pick the provider from the subject matter (biomedical → `research_europepmc_search`, everything else → `research_arxiv_search`; search both and merge if genuinely ambiguous). If handed a bare DOI or an identifier of unclear provenance, call `research_resolve_identifier` first. If handed a title or search query, run the search and present a short ranked list (provider, title, authors, year, one-line abstract snippet); confirm with the user which paper unless one is already named unambiguously. Do not fetch full text yet.
-2. **Fetch** — check `.prioris/papers/<provider>/<identifier>.md` first; reuse a cached copy instead of calling the MCP server again. Otherwise fetch and parse per provider, exactly as in `discuss`'s Fetch step (arXiv: `research_arxiv_fetch_full_text` then `research_arxiv_parse_full_text`, PDF preferred, HTML on retry; Europe PMC: `research_europepmc_fetch_full_text` then `research_europepmc_parse_full_text`, XML only) — `parse_full_text` is paginated, so loop on `has_more` per `../../shared/mcp-contracts.md#paging-through-full-text` to collect the complete text — then write the concatenated markdown plus frontmatter to `.prioris/papers/<provider>/<identifier>.md`.
+1. **Search/Select** — identical to `discuss`'s Search and Select steps: pick the provider from the subject matter (biomedical → `research_europepmc_search`, everything else → `research_arxiv_search`; search both and merge if genuinely ambiguous). If handed a bare DOI or an identifier of unclear provenance, call `research_resolve_identifier` first. If handed a title or search query, run the search and present a short ranked list (provider, title, authors, year, one-line abstract snippet); confirm with the user which paper unless one is already named unambiguously. Do not fetch full text yet. **If handed a local file (e.g. via `@file`) instead, skip straight to Fetch's `localfile` branch** — there's nothing to search or select.
+2. **Fetch** — check `.prioris/papers/<provider>/<identifier>.md` first; reuse a cached copy instead of calling the MCP server again. Otherwise fetch and parse per provider, exactly as in `discuss`'s Fetch step (arXiv: `research_arxiv_fetch_full_text` then `research_arxiv_parse_full_text`, PDF preferred, HTML on retry; Europe PMC: `research_europepmc_fetch_full_text` then `research_europepmc_parse_full_text`, XML only; local file: follow `../../shared/local-file-handling.md` in full — the cache check there comes *after* fetching, since identity isn't known until the file is re-hashed) — `parse_full_text` is paginated, so loop on `has_more` per `../../shared/mcp-contracts.md#paging-through-full-text` to collect the complete text — then write the concatenated markdown plus frontmatter (including `source_path` for `localfile`) to `.prioris/papers/<provider>/<identifier>.md`.
 3. **Summarize** — read the *one* cached paper into context and produce a structured summary grounded only in its actual text, under these headers, in this order:
    - **Research gap / question(s)** — what open problem or unanswered question motivates the work.
    - **Background** (compressed) — how existing literature falls short of addressing that gap, briefly.
@@ -34,4 +34,4 @@ A fast, structured single-pass summary of one paper's full text — not a discus
 
 ## Argument handling
 
-If invoked with `$ARGUMENTS` naming a paper id, title, or URL, use it to skip straight to the Search/Select step. If it's a URL, see `../../shared/url-handling.md` for how to extract the canonical identifier first. Otherwise ask which paper to summarize.
+If invoked with `$ARGUMENTS` naming a paper id, title, URL, or local file path, use it to skip straight to the Search/Select step. If it's a URL, see `../../shared/url-handling.md` for how to extract the canonical identifier first. If it's a local file path (e.g. `@file`), see `../../shared/local-file-handling.md` instead — it's fetched directly, never searched or resolved. Otherwise ask which paper to summarize.

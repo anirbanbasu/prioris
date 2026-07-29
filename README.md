@@ -10,7 +10,8 @@ The one paper at a time approach is deliberate: it forces you to engage with the
 
 ## How it works
 
-- Papers are found and fetched via a companion MCP server (the [`prioris-mcp`](https://github.com/anirbanbasu/prioris-mcp)) — arXiv (PDF-preferred, HTML fallback) and Europe PMC (JATS XML) — not generic web search, so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
+- Papers are found and fetched via a companion MCP server (the [`prioris-mcp`](https://github.com/anirbanbasu/prioris-mcp)) — arXiv (PDF-preferred, HTML fallback), Europe PMC (JATS XML), and a local PDF you already have on disk — not generic web search, so it behaves the same whether Claude Code is pointed at Anthropic's models or a local model.
+- Reference a local PDF directly with `@file` (e.g. `@paper.pdf`) instead of searching — `discuss` and `quick-read` fetch and cache it the same way as an arXiv/Europe PMC paper; `quiz-me` and `reading-log` recognize it by that same path afterwards, without re-fetching.
 - Cached paper content and discussion notes are stored as plain markdown with YAML frontmatter under `.prioris/` in your project — human-readable, git-diffable, no database. `.prioris/papers/` is regenerable cache; `.prioris/discussions/` is your actual notes and should be versioned.
 - No vector index, graph index, or multi-paper context loading in this version — cross-paper synthesis is a deliberately deferred feature, to be built later on top of the same markdown store.
 - Each capability is its own skill under `skills/<name>/SKILL.md` (the official Claude Code plugin layout) — no separate `commands/` directory. A skill's folder name is both its auto-trigger unit and its explicit slash-invocation name.
@@ -19,10 +20,12 @@ The one paper at a time approach is deliberate: it forces you to engage with the
 
 Each skill below is auto-triggered by Claude when relevant, and also explicitly invocable:
 
-- `/prioris:discuss [paper id, DOI, or search query]` — search, fetch, and discuss one paper at a time against your working ideas.
-- `/prioris:quick-read [paper id, DOI, or search query]` — one-shot structured summary of a paper's full text: research gap/questions, background, key assumptions, findings, conclusions, shortcomings, and future directions.
-- `/prioris:quiz-me [paper id]` — quiz yourself on a paper already opened (or named), grounded only in its actual text.
+- `/prioris:discuss [paper id, DOI, search query, or @file]` — search, fetch, and discuss one paper at a time against your working ideas.
+- `/prioris:quick-read [paper id, DOI, search query, or @file]` — one-shot structured summary of a paper's full text: research gap/questions, background, key assumptions, findings, conclusions, shortcomings, and future directions.
+- `/prioris:quiz-me [paper id or @file]` — quiz yourself on a paper already opened (or named), grounded only in its actual text.
+- `/prioris:reading-log [provider/ids/date range/keywords]` — recap already-cached discussions so you can pick up a prior thread; purely local, never fetches or searches.
 - `/prioris:rmotd [category] [n]` — abstracts-only digest (default 7, keep within 5–10) of recent items in one or more categories. No full-text fetch.
+- `/prioris:manage-storage` — list and delete what's been fetched on the `prioris-mcp` server itself (a separate cache from `.prioris/`), with an optional offer to clean up the matching local files too.
 
 ## Install
 
@@ -45,7 +48,7 @@ Every skill carries a lightweight `evals/evals.json` (prompts + verifiable expec
 
 ## Requires
 
-The [`prioris-mcp`](https://pypi.org/project/prioris-mcp/) server ([docs](https://docs-prioris-mcp.anirbanbasu.com/)), providing arXiv and Europe PMC search/fetch/parse tools plus identifier resolution — see `shared/mcp-contracts.md` for the full contract this plugin relies on.
+The [`prioris-mcp`](https://pypi.org/project/prioris-mcp/) server ([docs](https://docs-prioris-mcp.anirbanbasu.com/)), providing arXiv and Europe PMC search/fetch/parse tools, identifier resolution, a local-filesystem fetch/parse pair for `@file`, and server-side storage list/delete tools — see `shared/mcp-contracts.md` and `shared/storage-management.md` for the full contracts this plugin relies on.
 
 This plugin bundles a `.mcp.json` that launches it via [`uvx`](https://docs.astral.sh/uv/guides/tools/), so there's nothing to install ahead of time — `uvx` fetches and runs `prioris-mcp` from PyPI on first use. You only need `uv` itself available on your `PATH`.
 
