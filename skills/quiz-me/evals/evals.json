@@ -36,6 +36,17 @@
         "Runs research_arxiv_search (or the appropriate provider search) to resolve the title to a canonical identifier first",
         "Proceeds to quiz only after resolving and fetching/caching the paper"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "quiz me",
+      "expected_output": "Even though a paper (arXiv 2401.12345) was fetched and discussed earlier in this same conversation, does not silently assume it's the quiz target — states the candidate paper by title/identifier and asks for explicit confirmation before generating questions.",
+      "files": [".prioris/papers/arxiv/2401.12345.md"],
+      "expectations": [
+        "Does not start generating quiz questions without first naming the candidate paper",
+        "Explicitly asks the user to confirm the paper (by title or identifier) rather than assuming from context",
+        "If the user confirms, proceeds to quiz that paper; does not require a redundant search/fetch since it's already cached"
+      ]
     }
   ]
 }
