@@ -9,7 +9,7 @@ metadata:
 
 # Reading Log
 
-See `../../shared/scope.md` for the scope boundary shared by every skill in this plugin, and `../../shared/data-layout.md` for providers, `.prioris/` layout, and frontmatter schema. Unlike the other skills here, `reading-log` needs none of the shared MCP tool contracts (`../../shared/mcp-contracts.md`) — see "No MCP dependency" below.
+See `../../shared/scope.md` for the scope boundary shared by every skill in this plugin, `../../shared/data-layout.md` for providers, `.prioris/` layout, and frontmatter schema, and `../../shared/context-hygiene.md` for when to nudge the user to clear context. Unlike the other skills here, `reading-log` needs none of the shared MCP tool contracts (`../../shared/mcp-contracts.md`) — see "No MCP dependency" below.
 
 ## Scope
 
@@ -35,6 +35,7 @@ All filters are optional and combine with AND when more than one is given. If no
 5. Sort by most recent date first unless the user asks for a different order (e.g. by provider, alphabetical by title).
 6. Present the list, then separately list any requested ids/keywords that matched nothing, phrased as "not found in the local cache" — not as an error.
 7. Close by pointing at `discuss`, `quiz-me`, or `quick-read` with the relevant `identifier` for any item the user wants to revisit.
+8. Per `../../shared/context-hygiene.md`, if this conversation has been running long (e.g. scanning many discussions, or picking up several prior threads), close with a brief, polite nudge to clear context before diving back into a paper.
 
 ## No MCP dependency
 

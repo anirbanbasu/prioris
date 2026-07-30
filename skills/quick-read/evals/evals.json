@@ -12,7 +12,7 @@
         "If a section genuinely doesn't apply, says so briefly rather than fabricating content",
         "Appends or updates a 'Quick read' section in .prioris/discussions/arxiv/2403.05131.md using the same seven headers",
         "Sets read_at in the discussion note's frontmatter if not already set",
-        "Asks before overwriting an existing quick-read entry for this paper"
+        "Writes the quick-read entry automatically, without asking the user whether to save or overwrite it"
       ]
     },
     {

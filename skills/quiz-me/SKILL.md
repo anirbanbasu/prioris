@@ -9,7 +9,7 @@ metadata:
 
 # Quiz Me
 
-See `../../shared/scope.md` for the scope boundary and tool constraint shared by every skill in this plugin, and `../../shared/data-layout.md` for the `.prioris/` layout and frontmatter (including the `source_path` field a local file's cache entry carries). This skill reuses the existing cache — no MCP tool beyond the fetch/parse pair (via `discuss`) is required, and that holds for local files too: `quiz-me` never calls `research_localfile_fetch_full_text` itself (see Argument handling below).
+See `../../shared/scope.md` for the scope boundary and tool constraint shared by every skill in this plugin, `../../shared/data-layout.md` for the `.prioris/` layout and frontmatter (including the `source_path` field a local file's cache entry carries), and `../../shared/context-hygiene.md` for when to nudge the user to clear context. This skill reuses the existing cache — no MCP tool beyond the fetch/parse pair (via `discuss`) is required, and that holds for local files too: `quiz-me` never calls `research_localfile_fetch_full_text` itself (see Argument handling below).
 
 ## Workflow
 
@@ -17,7 +17,8 @@ See `../../shared/scope.md` for the scope boundary and tool constraint shared by
 2. Generate questions grounded only in the cached paper's actual text — mix recall (what was measured/reported), comprehension (why the method works, what the mechanism is), and application (how this would apply in a different setting). Do not invent facts the paper doesn't contain.
 3. Ask one question at a time; wait for the user's answer before revealing the correct answer or moving to the next question.
 4. After each answer, give brief feedback — correct / partially correct / incorrect — pointing at the relevant part of the paper rather than a full re-explanation, unless asked for more.
-5. At the end, summarize which concepts the user handled well vs. struggled with, and append a short "Quiz notes" entry to `.prioris/discussions/<provider>/<identifier>.md` (concepts to revisit) rather than a full transcript. Ask before overwriting a prior quiz-notes entry for that paper.
+5. At the end, summarize which concepts the user handled well vs. struggled with, and append a short "Quiz notes" entry to `.prioris/discussions/<provider>/<identifier>.md` (concepts to revisit) rather than a full transcript. Do this automatically — never ask the user whether to save it first. If a prior quiz-notes entry exists for that paper, replace it automatically rather than asking.
+6. Per `../../shared/context-hygiene.md`, if this conversation has been running long, close with a brief, polite nudge to clear context before moving to another paper.
 
 This skill keeps the same out-of-scope boundary as the rest of the plugin: it produces questions and feedback, never drafted prose.
 

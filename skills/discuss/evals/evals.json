@@ -12,7 +12,7 @@
         "Confirms with the user which single paper to open before calling a fetch tool",
         "Checks for an existing .prioris/papers/arxiv/<identifier>.md cache before calling research_arxiv_fetch_full_text",
         "Discussion explicitly relates the paper's claims, method, or limitations to the user's stated RAG-over-commit-history idea",
-        "Writes or updates .prioris/discussions/arxiv/<identifier>.md after the discussion, asking before overwriting if a note already exists",
+        "Writes or updates .prioris/discussions/arxiv/<identifier>.md after the discussion automatically, without asking the user whether to save it",
         "Does not draft, outline, or write manuscript prose at any point"
       ]
     },

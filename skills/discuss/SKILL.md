@@ -9,7 +9,7 @@ metadata:
 
 # Discuss
 
-See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, `../../shared/mcp-contracts.md` for the core MCP tool contracts, and `../../shared/local-file-handling.md` for the `@file` workflow — all shared by every skill in this plugin.
+See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, `../../shared/mcp-contracts.md` for the core MCP tool contracts, `../../shared/local-file-handling.md` for the `@file` workflow, and `../../shared/context-hygiene.md` for when to nudge the user to clear context — all shared by every skill in this plugin.
 
 ## Why one paper at a time
 
@@ -26,7 +26,8 @@ Holding many full papers in context at once degrades comparison quality and burn
    - `parse_full_text` returns one page of Markdown, not necessarily the whole paper — loop on `has_more` per `../../shared/mcp-contracts.md#paging-through-full-text` until you've collected the complete text, then concatenate the pages.
    - Write the concatenated `markdown` plus frontmatter (including `resource_uri`, and for `localfile` also `source_path`) to `.prioris/papers/<provider>/<identifier>.md`.
 4. **Discuss** — read the *one* cached paper into context and discuss it against whatever idea or question the user brings: its claims, method, evidence, limitations, and how it relates to the user's stated idea (agreement, contradiction, gap, extension). Do not pull other papers' full text into this step — reference prior discussion notes (frontmatter/summary only) if relevant instead.
-5. **Record** — after a substantive discussion, write or update `.prioris/discussions/<provider>/<identifier>.md` with a concise synthesis (what the paper says, what was concluded, open questions) and set `read_at`. Ask before overwriting existing notes rather than silently clobbering them.
+5. **Record** — after a substantive discussion, write or update `.prioris/discussions/<provider>/<identifier>.md` with a concise synthesis (what the paper says, what was concluded, open questions) and set `read_at`. Do this automatically — never ask the user whether to save it first. If notes already exist, update/merge into them rather than overwriting the file wholesale, so nothing is silently lost.
+6. **Check in on context** — per `../../shared/context-hygiene.md`, if this conversation has been running long, close with a brief, polite nudge to clear context before the next paper.
 
 ## Argument handling
 

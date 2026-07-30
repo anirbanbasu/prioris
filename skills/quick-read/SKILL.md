@@ -9,7 +9,7 @@ metadata:
 
 # Quick Read
 
-See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, `../../shared/mcp-contracts.md` for the core MCP tool contracts, and `../../shared/local-file-handling.md` for the `@file` workflow — all shared by every skill in this plugin.
+See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/data-layout.md` for providers and the `.prioris/` layout/frontmatter schema, `../../shared/mcp-contracts.md` for the core MCP tool contracts, `../../shared/local-file-handling.md` for the `@file` workflow, and `../../shared/context-hygiene.md` for when to nudge the user to clear context — all shared by every skill in this plugin.
 
 ## Scope
 
@@ -30,7 +30,8 @@ A fast, structured single-pass summary of one paper's full text — not a discus
 
    Do not invent facts the paper doesn't contain. If a section genuinely doesn't apply (e.g. the paper states no future directions), say so briefly rather than fabricating content.
 4. **Present** — show the summary in the conversation.
-5. **Record** — append or update a "Quick read" section in `.prioris/discussions/<provider>/<identifier>.md` using the same seven headers, and set `read_at` if it isn't already set. Ask before overwriting an existing quick-read entry for that paper rather than silently clobbering it.
+5. **Record** — append or update a "Quick read" section in `.prioris/discussions/<provider>/<identifier>.md` using the same seven headers, and set `read_at` if it isn't already set. Do this automatically — never ask the user whether to save it first. If a quick-read entry already exists for this paper, replace just that section rather than the whole file, so the rest of the notes aren't lost.
+6. **Check in on context** — per `../../shared/context-hygiene.md`, if this conversation has been running long, close with a brief, polite nudge to clear context before the next paper.
 
 ## Argument handling
 
