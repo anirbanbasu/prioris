@@ -1,0 +1,70 @@
+name: Skill misbehavior
+description: A specific skill (discuss, quick-read, quiz-me, reading-log, rmotd, manage-storage) auto-triggered wrongly, produced bad output, or went outside its documented scope.
+labels: ["bug", "skill"]
+body:
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Which skill?
+      options:
+        - discuss
+        - quick-read
+        - quiz-me
+        - reading-log
+        - rmotd
+        - manage-storage
+        - Not sure / multiple
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of misbehavior?
+      options:
+        - Wrong auto-trigger (fired when it shouldn't have, or didn't fire when it should)
+        - Incorrect or hallucinated output (not grounded in the paper's actual text)
+        - Scope violation (e.g. drafted/outlined manuscript prose, which prioris explicitly declines to do)
+        - Cache/state issue (wrong reuse, wrong invalidation, stale `.prioris/` content)
+        - \@file handling issue (local PDF not recognized, re-fetched unnecessarily, etc.)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt or slash command used
+      description: The exact text you typed, including any `@file` reference or paper ID.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Paste the actual response or output.
+    validations:
+      required: true
+
+  - type: input
+    id: paper-source
+    attributes:
+      label: Paper source
+      description: arXiv ID, DOI, Europe PMC ID, or local file path.
+    validations:
+      required: false
+
+  - type: input
+    id: mcp-version
+    attributes:
+      label: prioris-mcp server version
+    validations:
+      required: true

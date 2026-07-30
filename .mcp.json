@@ -1,9 +1,1 @@
-{
-    "mcpServers": {
-        "prioris-mcp": {
-            "command": "uvx",
-            "args": ["--from", "git+https://github.com/anirbanbasu/prioris-mcp", "prioris-mcp"]
-        }
-    }
-}
-
+.mcp.json.github

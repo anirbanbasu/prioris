@@ -1,0 +1,87 @@
+name: Bug report
+description: Something in the prioris plugin isn't working as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. If this is about a specific skill
+        misbehaving (wrong auto-trigger, bad output, scope violation), use the
+        **Skill misbehavior** template instead — it asks more targeted questions.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Exact command/prompt you ran, and any relevant `.prioris/` state.
+      placeholder: |
+        1. Ran `/prioris:discuss 2401.12345`
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include any error messages or unexpected output verbatim.
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: prioris plugin version / commit
+      placeholder: e.g. v0.2.0 or commit SHA
+    validations:
+      required: true
+
+  - type: input
+    id: mcp-version
+    attributes:
+      label: prioris-mcp server version
+      placeholder: e.g. 0.1.0 (see pyproject.toml or `uvx prioris-mcp --version`)
+    validations:
+      required: true
+
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs, transcript excerpt, or `.prioris/` file contents
+      render: shell
+    validations:
+      required: false

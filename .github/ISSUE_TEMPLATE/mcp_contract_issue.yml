@@ -1,0 +1,65 @@
+name: MCP contract / compatibility issue
+description: A mismatch between this plugin's expectations and the prioris-mcp server's actual tool behavior, schema, or version — see shared/mcp-contracts.md.
+labels: ["mcp-contract"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the plugin and the [`prioris-mcp`](https://github.com/anirbanbasu/prioris-mcp) server
+        disagree about a tool's name, arguments, return shape, or behavior — e.g. after a `prioris-mcp`
+        release, or a change to `shared/mcp-contracts.md`, `shared/data-layout.md`, `shared/local-file-handling.md`,
+        or `shared/storage-management.md`.
+
+  - type: input
+    id: mcp-version
+    attributes:
+      label: prioris-mcp server version
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: prioris plugin version / commit
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tool-area
+    attributes:
+      label: Which MCP capability is affected?
+      options:
+        - arXiv search/fetch/parse
+        - Europe PMC search/fetch/parse
+        - Local-file fetch/parse (@file)
+        - Identifier resolution
+        - Server-side storage list/delete
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-contract
+    attributes:
+      label: Expected contract
+      description: What the plugin (or `shared/mcp-contracts.md`) currently expects — tool name, arguments, return shape.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual server behavior
+      description: What the server actually returned or how it actually behaved. Include raw tool call/response if possible.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Which skill(s) break or behave incorrectly as a result?
+    validations:
+      required: false

@@ -1,0 +1,52 @@
+name: Feature or new provider request
+description: Request a new skill, a new research provider, or a new capability.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Note prioris's deliberate scope: it will **not** draft, outline, or write manuscript
+        prose (see README "Scope"). Requests that fall into that territory will likely be declined.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of request is this?
+      options:
+        - New research provider (beyond arXiv / Europe PMC / local file)
+        - New skill
+        - Enhancement to an existing skill
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What can't you currently do, and why does it matter?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What would the skill/provider/command actually do? Include example prompts or slash commands if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope-check
+    attributes:
+      label: Scope check
+      options:
+        - label: This request is about literature discovery, discussion, or notes — not manuscript drafting/writing.
+          required: true
