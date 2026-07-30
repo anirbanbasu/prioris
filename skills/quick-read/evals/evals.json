@@ -38,6 +38,30 @@
         "Skips the search/select step since a specific paper was already named",
         "Produces the same seven-header structure as a directly-named-id request"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Quick read arXiv 2403.05131 again.",
+      "expected_output": "Recognizes the paper already has a recorded Quick read section and presents that cached section directly, without re-fetching or re-summarizing.",
+      "files": [".prioris/discussions/arxiv/2403.05131.md"],
+      "expectations": [
+        "Checks .prioris/discussions/arxiv/2403.05131.md for an existing 'Quick read' section before calling any MCP tool",
+        "Does not call research_arxiv_fetch_full_text, research_arxiv_parse_full_text, or any other prioris-mcp tool",
+        "Presents the cached seven-header content rather than regenerating a new summary",
+        "Does not rewrite or append to the discussion note, since nothing changed"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Refetch arXiv 2403.05131 and give me a fresh quick read — the paper's been revised since we last looked at it.",
+      "expected_output": "Skips both the discussions cache short-circuit and the papers cache reuse, fetches fresh from the MCP server, regenerates the seven-header summary from the new text, and overwrites both cached files.",
+      "files": [".prioris/papers/arxiv/2403.05131.md", ".prioris/discussions/arxiv/2403.05131.md"],
+      "expectations": [
+        "Does not present the existing cached 'Quick read' section as-is, despite one already existing",
+        "Does not reuse .prioris/papers/arxiv/2403.05131.md as-is; calls research_arxiv_fetch_full_text and research_arxiv_parse_full_text fresh",
+        "Overwrites .prioris/papers/arxiv/2403.05131.md with the newly fetched content",
+        "Regenerates the seven-header summary from the newly fetched text and replaces the 'Quick read' section in the discussion note"
+      ]
     }
   ]
 }

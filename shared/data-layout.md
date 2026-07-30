@@ -38,3 +38,13 @@ tags: [...]
 ```
 
 `localfile` entries add one more field: `source_path: <the path you were given, e.g. via @file>`. Nothing else consumes it at fetch time, but `quiz-me` and `reading-log` both use it to recognize "this same file" again without an opaque id to search on — see `local-file-handling.md` and `reading-log`'s `ids` filter. `title`/`authors`/`source_url` won't be available from a provider lookup the way they are for `arxiv`/`europepmc`; fill them in from the PDF's own content (e.g. a title page) if evident, or leave them blank rather than guessing.
+
+## Forcing a refetch
+
+By default, every skill that reads `.prioris/papers/<provider>/<identifier>.md` treats a cache hit as final and reuses it as-is, never re-fetching, since a published `arxiv`/`europepmc` identifier is normally immutable. If the user explicitly asks to refetch, force a refresh, or get the latest version of a paper already cached this way — e.g. an arXiv preprint that's been revised to a new version, or a suspicion the cached copy is truncated or corrupted — bypass the `.prioris/papers/` cache check entirely for that call: run the provider's fetch/parse tools fresh exactly as if nothing were cached, then overwrite the existing `.prioris/papers/<provider>/<identifier>.md` with the new content and a fresh `fetched_at`.
+
+This only applies to `arxiv`/`europepmc`. `localfile` already fetches fresh on every call regardless (see `local-file-handling.md`), so there's nothing to force there.
+
+Only `discuss` and `quick-read` call the fetch tools directly. `quiz-me` never fetches on its own — a refetch request there defers to `discuss`'s forced Fetch step first, the same way an ordinary cache-miss fetch already does, before quizzing from the result.
+
+A plain "redo"/"regenerate" request (e.g. `quick-read` regenerating its summary from already-cached text) is not the same as a refetch and should not bypass this cache — only an explicit ask for a refetch or the latest version should.

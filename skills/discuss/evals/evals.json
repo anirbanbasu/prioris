@@ -41,6 +41,18 @@
         "If fetch fails with format_unavailable, explicitly offers to continue from abstract/metadata only rather than silently stopping",
         "Never substitutes a built-in web search/fetch tool for the prioris-mcp calls"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Can you refetch arXiv 2401.12345v2? I think a new version came out and the cached copy might be stale.",
+      "expected_output": "Bypasses the .prioris/papers/arxiv/2401.12345v2.md cache because a refetch was explicitly requested, calls the arXiv fetch/parse tools fresh, and overwrites the cached file.",
+      "files": [".prioris/papers/arxiv/2401.12345v2.md"],
+      "expectations": [
+        "Does not reuse the existing .prioris/papers/arxiv/2401.12345v2.md cache despite it already existing",
+        "Calls research_arxiv_fetch_full_text (format=pdf, retrying html if needed) and research_arxiv_parse_full_text despite the cache hit",
+        "Overwrites .prioris/papers/arxiv/2401.12345v2.md with the freshly fetched content and an updated fetched_at",
+        "Does not treat this as an ordinary redo/regenerate request — it's a fetch-level refresh, not a generation-level one"
+      ]
     }
   ]
 }
