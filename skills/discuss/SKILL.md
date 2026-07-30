@@ -33,4 +33,4 @@ Holding many full papers in context at once degrades comparison quality and burn
 
 If invoked with `$ARGUMENTS` containing a paper identifier, URL, search query, or local file path (e.g. `@file`), use it to skip straight to the Search/Fetch step. Otherwise ask what the user is looking for.
 
-If `$ARGUMENTS` (or the user) hands you a URL, see `../../shared/url-handling.md` for how to extract the canonical identifier before calling anything — no `prioris-mcp` tool accepts a raw URL as input. If instead you're handed a local file path, see `../../shared/local-file-handling.md` for path handling and the fetch sequence — a local file is not searched or resolved, it's fetched directly.
+If `$ARGUMENTS` (or the user) hands you a URL, see `../../shared/url-handling.md` for how to extract the canonical identifier before calling anything — no `prioris-mcp` tool accepts a raw URL as input. If instead you're handed a local file path, see `../../shared/local-file-handling.md` for how to read and encode it and for the fetch sequence — a local file is not searched or resolved, it's fetched directly.
