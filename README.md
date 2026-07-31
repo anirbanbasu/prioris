@@ -45,13 +45,15 @@ claude --plugin-dir /path/to/prioris
 
 This loads the plugin for the current session only — use it to iterate on `skills/*/SKILL.md` before pushing and publishing via a marketplace. Multiple `--plugin-dir` flags can be given at once if you're testing alongside other local plugins.
 
+Run `just sync` once (or let the first `uv run` in `.mcp.json` do it lazily) to create the `.venv` this repo's `pyproject.toml` describes, which pins the companion `prioris-mcp` server and provides the interpreter for `shared/scripts/` (see `shared/scripts/README.md`). Because `uv.lock` pins an exact git commit rather than re-resolving `master` on every launch, `prioris-mcp` won't pick up new upstream commits automatically — run `just update-mcp` to re-pin to the latest commit when you want that.
+
 Every skill carries a lightweight `evals/evals.json` (prompts + verifiable expectations) alongside its `SKILL.md` — add one for any new skill so behavior can be checked before an edit ships, not just eyeballed.
 
 ## Requires
 
 The [`prioris-mcp`](https://pypi.org/project/prioris-mcp/) server ([docs](https://docs-prioris-mcp.anirbanbasu.com/)), providing arXiv and Europe PMC search/fetch/parse tools, identifier resolution, a local-filesystem fetch/parse pair for `@file`, and server-side storage list/delete tools — see `shared/mcp-contracts.md` and `shared/storage-management.md` for the full contracts this plugin relies on.
 
-This plugin bundles a `.mcp.json` that launches it via [`uvx`](https://docs.astral.sh/uv/guides/tools/), so there's nothing to install ahead of time — `uvx` fetches and runs `prioris-mcp` from PyPI on first use. You only need `uv` itself available on your `PATH`.
+This plugin bundles a `.mcp.json` that launches it via `uv run --project ${CLAUDE_PLUGIN_ROOT} prioris-mcp`, using the local, version-pinned environment defined by the repo's own `pyproject.toml`/`uv.lock` (currently tracking `prioris-mcp`'s git `master` branch, pinned to whatever commit was last locked — see "Local development" below). `uv run` creates that environment on first use, so there's still nothing to install ahead of time beyond `uv` itself on your `PATH`.
 
 ## Scope
 

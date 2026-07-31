@@ -1,6 +1,19 @@
 plugin_json := ".claude-plugin/plugin.json"
 marketplace_json := ".claude-plugin/marketplace.json"
 
+# Create/refresh the local venv that .mcp.json's `uv run` launches prioris-mcp from,
+# and that shared/scripts/ run under
+sync:
+    @uv sync
+
+# Re-pin prioris-mcp to its current git HEAD (the venv otherwise stays on whatever
+# commit uv.lock last resolved - see shared/scripts/README.md)
+update-mcp:
+    @echo "Re-resolving prioris-mcp against git HEAD..."
+    @uv lock --upgrade-package prioris-mcp
+    @uv sync
+    @echo "Done. Restart any running prioris-mcp session to pick up the new commit."
+
 # Install pre-commit hooks using 'prek'
 install-pre-commit-hooks:
     @echo "Installing pre-commit hooks using prek..."

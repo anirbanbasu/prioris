@@ -1,1 +1,13 @@
-.mcp.json.github
+{
+  "mcpServers": {
+    "prioris-mcp": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "prioris-mcp"
+      ]
+    }
+  }
+}

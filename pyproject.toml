@@ -1,0 +1,15 @@
+[project]
+name = "prioris-plugin-dev"
+version = "0.1.0"
+description = "Development environment for the prioris Claude Code plugin: pins the companion prioris-mcp server for .mcp.json's `uv run` launch, and provides the interpreter for shared/scripts/."
+requires-python = ">=3.13"
+dependencies = [
+    "prioris-mcp @ git+https://github.com/anirbanbasu/prioris-mcp",
+    "pyyaml>=6.0",
+]
+
+[tool.uv]
+# No build backend on purpose: this pyproject.toml only exists to pin an
+# environment (prioris-mcp + shared/scripts/ dependencies), not to be built
+# or published as a package itself.
+package = false
