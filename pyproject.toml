@@ -4,8 +4,9 @@ version = "0.1.0"
 description = "Development environment for the prioris Claude Code plugin: pins the companion prioris-mcp server for .mcp.json's `uv run` launch, and provides the interpreter for shared/scripts/."
 requires-python = ">=3.13"
 dependencies = [
-    "prioris-mcp @ git+https://github.com/anirbanbasu/prioris-mcp",
+    "prioris-mcp",
     "pyyaml>=6.0",
+    "fastmcp>=3.4.5",
 ]
 
 [tool.uv]
@@ -13,3 +14,6 @@ dependencies = [
 # environment (prioris-mcp + shared/scripts/ dependencies), not to be built
 # or published as a package itself.
 package = false
+
+[tool.uv.sources]
+prioris-mcp = { git="https://github.com/anirbanbasu/prioris-mcp"}

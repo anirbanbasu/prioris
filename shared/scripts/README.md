@@ -4,17 +4,25 @@ Referenced by `local-file-handling.md`, `url-handling.md`, and the Record step o
 
 ## How to invoke them
 
-Run every script with `uv`, using the environment this repo's own `pyproject.toml`/`uv.lock` pin — not your own `python3`, which won't have the pinned dependencies these scripts rely on (e.g. PyYAML for `update_notes_section.py`):
+It is imperative that any Python you run — a script in this directory, from any skill, or an ad hoc snippet you write yourself for a one-off check — always runs as `uv run python`, never bare `python` or `python3`, without exception. This isn't specific to the bundled scripts: the same rule applies to anything Python-shaped you decide to execute. A bare `python3` resolves to whatever interpreter happens to be on the host's `PATH`, which won't have the pinned dependencies these scripts rely on (e.g. PyYAML for `update_notes_section.py`) and may not even be the same major version — `uv run` is what guarantees this repo's own `pyproject.toml`/`uv.lock`-pinned environment is the one that runs.
+
+For a bundled script:
 
 ```
 uv run --project <plugin root> python <plugin root>/shared/scripts/<script>.py <args>
+```
+
+For an ad hoc snippet with no file of its own:
+
+```
+uv run --project <plugin root> python -c "<snippet>"
 ```
 
 `<plugin root>` is this plugin's own installed directory — the same directory every `SKILL.md` already resolves `../../shared/*.md` against, and every `shared/*.md` resolves `../scripts/*.py` against. Compute it as a concrete absolute path from wherever you found this file before running the command; don't assume the shell's current working directory is the plugin root, since the user's actual project directory can be anywhere.
 
 ## Scripts
 
-- **`encode_local_pdf.py <path>`** — base64-encode a local PDF for `content_base64`, with a local `%PDF-` magic-byte check that fails fast before any MCP call. See `../local-file-handling.md`.
+- **`pdf_chunk_upload_helper.py <path> [--filename <name>]`** — with a local `%PDF-` magic-byte check that fails fast before any MCP call, uploads a local PDF to `prioris-mcp` via the three-phase chunked-upload flow (`research_localfile_begin_upload` → `research_localfile_upload_chunk` looped → `research_localfile_finalize_upload`), acting as its own in-process MCP client so every chunk's base64 stays inside the script and never reaches the calling agent's context. Prints one line of result JSON on stdout, or a one-line error on stderr. See `../local-file-handling.md`.
 - **`extract_identifier.py <url-or-doi>`** — extract `{"provider": ..., "identifier": ...}` from a paper URL or bare DOI. See `../url-handling.md`.
 - **`update_notes_section.py <target.md> "<## Header>" <content-file> [--frontmatter <keys.yaml>]`** — merge one named section (and optionally some frontmatter keys) into a `.prioris/discussions/<provider>/<identifier>.md` note, preserving every other section and frontmatter key untouched. See `../data-layout.md` and each skill's Record step.
 
@@ -22,4 +30,6 @@ Each script's own module docstring documents its exact usage, output shape, and 
 
 ## What's deliberately *not* scripted
 
-The `has_more` pagination loop for `parse_full_text` (see `../mcp-contracts.md#paging-through-full-text`) looks like the same kind of mechanical repetition, but isn't a candidate: each iteration is itself an MCP tool call, and only the agent driving the conversation can make one — a script has no path to invoke `prioris-mcp` the same way. That loop stays as a prose instruction.
+The `has_more` pagination loop for `parse_full_text` (see `../mcp-contracts.md#paging-through-full-text`) looks like the same kind of mechanical repetition, but isn't a candidate: each iteration needs to hand its `markdown` page back into the conversation (to write to `.prioris/papers/...` or discuss), and only the agent driving the conversation can do that — a script that made this loop internally would have nowhere to put the pages it collected except print them, defeating the point. That loop stays as a prose instruction.
+
+`pdf_chunk_upload_helper.py`'s own begin/chunk-loop/finalize sequence looks like the same shape but *is* scripted despite that reasoning, because it's the opposite case: nothing about an intermediate chunk's `upload_chunk` response needs to reach the conversation at all — only the final `finalize_upload` result does — so running the whole loop inside one script call, as its own MCP client, is strictly better than surfacing each chunk as a separate tool call the agent would otherwise have to make (and pay context for) one by one.
