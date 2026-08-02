@@ -46,7 +46,9 @@
       "id": 4,
       "prompt": "Can you refetch arXiv 2401.12345v2? I think a new version came out and the cached copy might be stale.",
       "expected_output": "Bypasses the .prioris/papers/arxiv/2401.12345v2.md cache because a refetch was explicitly requested, calls the arXiv fetch/parse tools fresh, and overwrites the cached file.",
-      "files": [".prioris/papers/arxiv/2401.12345v2.md"],
+      "files": [
+        ".prioris/papers/arxiv/2401.12345v2.md"
+      ],
       "expectations": [
         "Does not reuse the existing .prioris/papers/arxiv/2401.12345v2.md cache despite it already existing",
         "Calls research_arxiv_fetch_full_text (format=pdf, retrying html if needed) and research_arxiv_parse_full_text despite the cache hit",

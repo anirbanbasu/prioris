@@ -17,3 +17,57 @@ package = false
 
 [tool.uv.sources]
 prioris-mcp = { git="https://github.com/anirbanbasu/prioris-mcp"}
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.65",
+]
+test = [
+    "coverage>=7.15.2",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["script-tests"]
+# shared/scripts/ has no __init__.py - each file is a standalone script, not a package - so this
+# is what lets `import pdf_chunk_upload_helper` etc. resolve from script-tests/ without sys.path
+# hacks in conftest.py.
+pythonpath = ["shared/scripts"]
+
+[tool.ty.environment]
+# Same reason as [tool.pytest.ini_options].pythonpath above: ty resolves imports against its own
+# search path, not pytest's, so script-tests/'s `import pdf_chunk_upload_helper` etc. needs this
+# too, or ty reports unresolved-import for every script under test.
+extra-paths = ["shared/scripts"]
+
+[tool.coverage.run]
+omit = [
+    "script-tests/*", # Excludes all files and subdirectories within a 'script-tests' directory at the project root
+]
+
+[tool.coverage.report]
+fail_under = 100
+skip_covered = true
+show_missing = true
+ignore_errors = true
+precision = 2
+exclude_lines = [
+    # `# pragma: no cover` is standard marker for code that's not covered, this will error if code is covered
+    'pragma: no cover',
+    # use `# pragma: lax no cover` if you want to ignore cases where (some of) the code is covered
+    'pragma: lax no cover',
+    'raise NotImplementedError',
+    'if TYPE_CHECKING:',
+    'if typing.TYPE_CHECKING:',
+    '@overload',
+    '@deprecated',
+    '@typing.overload',
+    '@abstractmethod',
+    '\(Protocol\):$',
+    'typing.assert_never',
+    '$\s*assert_never\(',
+    'if __name__ == .__main__.:',
+    'except ImportError as _import_error:',
+    '$\s*pass$',
+    'assert False',
+]

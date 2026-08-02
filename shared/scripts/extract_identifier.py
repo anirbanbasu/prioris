@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Extract a canonical (provider, identifier) pair from a paper URL or bare DOI.
 
 Implements the exact branches in ../url-handling.md - no prioris-mcp tool
@@ -41,10 +40,13 @@ def extract(raw: str) -> tuple[str, str] | None:
     host = (parsed.hostname or "").lower()
     parts = [p for p in parsed.path.split("/") if p]
 
-    if _host_matches(host, "arxiv.org") and parts and parts[0] in ("abs", "pdf", "html"):
+    if (
+        _host_matches(host, "arxiv.org")
+        and parts
+        and parts[0] in ("abs", "pdf", "html")
+    ):
         identifier = "/".join(parts[1:])
-        if identifier.endswith(".pdf"):
-            identifier = identifier[: -len(".pdf")]
+        identifier = identifier.removesuffix(".pdf")
         if identifier:
             return ("arxiv", identifier)
 

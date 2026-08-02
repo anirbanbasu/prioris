@@ -6,14 +6,11 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: tests|src/prioris_mcp/parsers/data/
       - id: end-of-file-fixer
-        exclude: src/prioris_mcp/parsers/data/
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: check-json
       - id: check-toml
-        exclude: tests/fixtures/invalid_lock/uv\.lock
       - id: check-yaml
       - id: pretty-format-json
         args: [--autofix, --no-ensure-ascii, --no-sort-keys]
@@ -21,26 +18,33 @@ repos:
       - id: debug-statements
       - id: check-docstring-first
       - id: detect-private-key
-  # Ruff is disabled for now until this repository has Python scripts.
-  # - repo: https://github.com/astral-sh/ruff-pre-commit
-  #   # Ruff version.
-  #   rev: v0.16.0
-  #   hooks:
-  #     # Run the linter.
-  #     - id: ruff-check
-  #       args: [--fix, --exit-non-zero-on-fix, --respect-gitignore]
-  #       exclude: ".*uv.lock|.*_static"
-  #     # Run the formatter.
-  #     - id: ruff-format
-  #       args: [--respect-gitignore]
-  #       exclude: ".*uv.lock|.*_static"
-  # Type checking is disabled for now.
-  # - repo: local
-  #   hooks:
-  #   - id: ty
-  #     name: typecheck
-  #     entry: uv run ty check
-  #     language: system
-  #     types: [python]
-  #     pass_filenames: false
-  #     always_run: true
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.16.0
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix, --respect-gitignore]
+        exclude: ".*uv.lock|.*_static"
+      # Run the formatter.
+      - id: ruff-format
+        args: [--respect-gitignore]
+        exclude: ".*uv.lock|.*_static"
+  - repo: local
+    hooks:
+      - id: ty
+        name: typecheck
+        entry: uv run ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+  - repo: local
+    hooks:
+      - id: pytest-coverage
+        name: pytest-coverage
+        entry: uv run --group test coverage run -m pytest script-tests/
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true

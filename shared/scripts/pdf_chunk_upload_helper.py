@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Upload a local PDF to prioris-mcp via the three-phase chunked-upload flow.
 
 Drives research_localfile_begin_upload -> research_localfile_upload_chunk (looped) ->
@@ -34,13 +33,13 @@ os.environ.setdefault("PRIORIS_MCP_LOG_LEVEL", "WARNING")
 import anyio
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
-from pydantic import ValidationError
 from prioris_mcp.models.localfile import (
     LocalFileBeginUploadResult,
     LocalFileFetchResult,
     LocalFileUploadChunkResult,
 )
 from prioris_mcp.server import app
+from pydantic import ValidationError
 
 PDF_MAGIC_PREFIX = b"%PDF-"
 
@@ -48,7 +47,11 @@ PDF_MAGIC_PREFIX = b"%PDF-"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("path", type=Path)
-    parser.add_argument("--filename", default=None, help="Filename hint stored for reference only (default: basename)")
+    parser.add_argument(
+        "--filename",
+        default=None,
+        help="Filename hint stored for reference only (default: basename)",
+    )
     return parser.parse_args()
 
 
@@ -74,27 +77,43 @@ def chunk_base64(encoded: str, max_chunk_bytes: int) -> list[str]:
     piece), so the server can decode each `chunk_base64` argument on its own.
     """
     chars_per_chunk = (max_chunk_bytes // 3) * 4
-    return [encoded[i : i + chars_per_chunk] for i in range(0, len(encoded), chars_per_chunk)] or [""]
+    return [
+        encoded[i : i + chars_per_chunk]
+        for i in range(0, len(encoded), chars_per_chunk)
+    ] or [""]
 
 
 async def upload(content: bytes, filename: str | None) -> LocalFileFetchResult:
     encoded = base64.b64encode(content).decode("ascii")
     async with Client(transport=app(), timeout=60) as client:
         try:
-            begin_result = await client.call_tool("research_localfile_begin_upload", arguments={"filename": filename})
-            begin = LocalFileBeginUploadResult.model_validate(begin_result.structured_content)
+            begin_result = await client.call_tool(
+                "research_localfile_begin_upload", arguments={"filename": filename}
+            )
+            begin = LocalFileBeginUploadResult.model_validate(
+                begin_result.structured_content
+            )
 
             for index, piece in enumerate(chunk_base64(encoded, begin.max_chunk_bytes)):
                 chunk_result = await client.call_tool(
                     "research_localfile_upload_chunk",
-                    arguments={"session_id": begin.session_id, "index": index, "chunk_base64": piece},
+                    arguments={
+                        "session_id": begin.session_id,
+                        "index": index,
+                        "chunk_base64": piece,
+                    },
                 )
-                LocalFileUploadChunkResult.model_validate(chunk_result.structured_content)
+                LocalFileUploadChunkResult.model_validate(
+                    chunk_result.structured_content
+                )
 
             finalize_result = await client.call_tool(
-                "research_localfile_finalize_upload", arguments={"session_id": begin.session_id}
+                "research_localfile_finalize_upload",
+                arguments={"session_id": begin.session_id},
             )
-            return LocalFileFetchResult.model_validate(finalize_result.structured_content)
+            return LocalFileFetchResult.model_validate(
+                finalize_result.structured_content
+            )
         except ToolError as exc:
             sys.exit(str(exc))
         except ValidationError as exc:

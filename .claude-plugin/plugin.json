@@ -9,5 +9,12 @@
   "homepage": "https://github.com/anirbanbasu/prioris",
   "repository": "https://github.com/anirbanbasu/prioris",
   "license": "MIT",
-  "keywords": ["literature-review", "research", "academic", "papers", "mcp", "prior-art"]
+  "keywords": [
+    "literature-review",
+    "research",
+    "academic",
+    "papers",
+    "mcp",
+    "prior-art"
+  ]
 }

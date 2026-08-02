@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Merge one named section (and optionally some frontmatter keys) into a
 .prioris/discussions/<provider>/<identifier>.md note, preserving everything
 else in the file untouched.
@@ -50,7 +49,11 @@ class _StringSafeLoader(yaml.SafeLoader):
 
 
 _StringSafeLoader.yaml_implicit_resolvers = {
-    key: [(tag, regexp) for tag, regexp in resolvers if tag != "tag:yaml.org,2002:timestamp"]
+    key: [
+        (tag, regexp)
+        for tag, regexp in resolvers
+        if tag != "tag:yaml.org,2002:timestamp"
+    ]
     for key, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()
 }
 
@@ -68,7 +71,7 @@ def split_frontmatter(text: str) -> tuple[dict, str]:
         raise ValueError("frontmatter '---' block is never closed")
     frontmatter = yaml.load("".join(lines[1:end_idx]), Loader=_StringSafeLoader) or {}
     if not isinstance(frontmatter, dict):
-        raise ValueError("frontmatter didn't parse as a YAML mapping")
+        raise TypeError("frontmatter didn't parse as a YAML mapping")
     body = "".join(lines[end_idx + 1 :])
     return frontmatter, body
 
@@ -85,7 +88,13 @@ def parse_sections(body: str) -> list[list[str]]:
 
 
 def render(frontmatter: dict, sections: list[list[str]]) -> str:
-    fm_text = yaml.dump(frontmatter, sort_keys=False, allow_unicode=True, default_flow_style=None, width=1000)
+    fm_text = yaml.dump(
+        frontmatter,
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=None,
+        width=1000,
+    )
     parts = ["---\n", fm_text, "---\n"]
     for header, content in sections:
         parts.append("\n" + header + "\n")
@@ -108,16 +117,23 @@ def main() -> int:
 
     if len(args) != 3:
         print(
-            f"usage: {Path(sys.argv[0]).name} <target.md> \"<## Section Header>\" "
+            f'usage: {Path(sys.argv[0]).name} <target.md> "<## Section Header>" '
             "<content-file.md> [--frontmatter <keys.yaml>]",
             file=sys.stderr,
         )
         return 2
 
-    target_path, section_header, content_file = (Path(args[0]), args[1].rstrip(), Path(args[2]))
+    target_path, section_header, content_file = (
+        Path(args[0]),
+        args[1].rstrip(),
+        Path(args[2]),
+    )
 
     if not section_header.startswith("#"):
-        print(f'section header must start with "#" (e.g. "## Quick read"), got: {section_header!r}', file=sys.stderr)
+        print(
+            f'section header must start with "#" (e.g. "## Quick read"), got: {section_header!r}',
+            file=sys.stderr,
+        )
         return 2
 
     try:
@@ -129,8 +145,10 @@ def main() -> int:
     if target_path.exists():
         try:
             frontmatter, body = split_frontmatter(target_path.read_text())
-        except ValueError as exc:
-            print(f"{target_path} doesn't look safe to merge into: {exc}", file=sys.stderr)
+        except (ValueError, TypeError) as exc:
+            print(
+                f"{target_path} doesn't look safe to merge into: {exc}", file=sys.stderr
+            )
             return 1
         sections = parse_sections(body)
         created = False
@@ -140,13 +158,21 @@ def main() -> int:
 
     if frontmatter_path is not None:
         try:
-            overrides = yaml.load(Path(frontmatter_path).read_text(), Loader=_StringSafeLoader)
+            overrides = yaml.load(
+                Path(frontmatter_path).read_text(), Loader=_StringSafeLoader
+            )
         except OSError as exc:
-            print(f"couldn't read frontmatter file {frontmatter_path}: {exc}", file=sys.stderr)
+            print(
+                f"couldn't read frontmatter file {frontmatter_path}: {exc}",
+                file=sys.stderr,
+            )
             return 1
         if overrides:
             if not isinstance(overrides, dict):
-                print(f"{frontmatter_path} must be a YAML mapping of frontmatter keys", file=sys.stderr)
+                print(
+                    f"{frontmatter_path} must be a YAML mapping of frontmatter keys",
+                    file=sys.stderr,
+                )
                 return 1
             frontmatter.update(overrides)
     elif created:
