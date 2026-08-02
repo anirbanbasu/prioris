@@ -12,15 +12,15 @@ Usage:
 
 On success, prints the finalize_upload result JSON to stdout (same shape as
 research_localfile_fetch_full_text: id, location, format, size_bytes, served_from_storage,
-resource_uri) and exits 0. On failure - a local problem (missing file, not a PDF) or an error
-envelope from any of the three MCP calls - prints a one-line reason to stderr and exits non-zero.
-Deliberately does not retry with variations; a `file_too_large`/`invalid_request` envelope is a
-property of the file's actual content, not something fixable by re-encoding it differently.
+resource_uri) and exits 0. On failure - a local problem (missing file, not a PDF), an MCP-side
+ToolError raised by any of the three calls, or a response that doesn't validate against the
+expected output model - prints a one-line reason to stderr and exits non-zero. Deliberately does
+not retry with variations; a `file_too_large`/`invalid_request` failure is a property of the
+file's actual content, not something fixable by re-encoding it differently.
 """
 
 import argparse
 import base64
-import json
 import os
 import sys
 from pathlib import Path
@@ -33,6 +33,13 @@ os.environ.setdefault("PRIORIS_MCP_LOG_LEVEL", "WARNING")
 
 import anyio
 from fastmcp import Client
+from fastmcp.exceptions import ToolError
+from pydantic import ValidationError
+from prioris_mcp.models.localfile import (
+    LocalFileBeginUploadResult,
+    LocalFileFetchResult,
+    LocalFileUploadChunkResult,
+)
 from prioris_mcp.server import app
 
 PDF_MAGIC_PREFIX = b"%PDF-"
@@ -70,32 +77,28 @@ def chunk_base64(encoded: str, max_chunk_bytes: int) -> list[str]:
     return [encoded[i : i + chars_per_chunk] for i in range(0, len(encoded), chars_per_chunk)] or [""]
 
 
-async def upload(content: bytes, filename: str | None) -> dict:
+async def upload(content: bytes, filename: str | None) -> LocalFileFetchResult:
     encoded = base64.b64encode(content).decode("ascii")
     async with Client(transport=app(), timeout=60) as client:
-        begin_result = await client.call_tool("research_localfile_begin_upload", arguments={"filename": filename})
-        begin = begin_result.structured_content
-        if "error" in begin:
-            sys.exit(f"{begin['error']}: {begin['message']}")
-        session_id = begin["session_id"]
-        max_chunk_bytes = begin["max_chunk_bytes"]
+        try:
+            begin_result = await client.call_tool("research_localfile_begin_upload", arguments={"filename": filename})
+            begin = LocalFileBeginUploadResult.model_validate(begin_result.structured_content)
 
-        for index, piece in enumerate(chunk_base64(encoded, max_chunk_bytes)):
-            chunk_result = await client.call_tool(
-                "research_localfile_upload_chunk",
-                arguments={"session_id": session_id, "index": index, "chunk_base64": piece},
+            for index, piece in enumerate(chunk_base64(encoded, begin.max_chunk_bytes)):
+                chunk_result = await client.call_tool(
+                    "research_localfile_upload_chunk",
+                    arguments={"session_id": begin.session_id, "index": index, "chunk_base64": piece},
+                )
+                LocalFileUploadChunkResult.model_validate(chunk_result.structured_content)
+
+            finalize_result = await client.call_tool(
+                "research_localfile_finalize_upload", arguments={"session_id": begin.session_id}
             )
-            chunk = chunk_result.structured_content
-            if "error" in chunk:
-                sys.exit(f"{chunk['error']}: {chunk['message']}")
-
-        finalize_result = await client.call_tool(
-            "research_localfile_finalize_upload", arguments={"session_id": session_id}
-        )
-        finalize = finalize_result.structured_content
-        if "error" in finalize:
-            sys.exit(f"{finalize['error']}: {finalize['message']}")
-        return finalize
+            return LocalFileFetchResult.model_validate(finalize_result.structured_content)
+        except ToolError as exc:
+            sys.exit(str(exc))
+        except ValidationError as exc:
+            sys.exit(f"unexpected response shape from prioris-mcp: {exc}")
 
 
 def main() -> int:
@@ -104,7 +107,7 @@ def main() -> int:
     filename = args.filename or args.path.name
 
     result = anyio.run(upload, content, filename)
-    print(json.dumps(result))
+    print(result.model_dump_json(by_alias=True))
     return 0
 
 
