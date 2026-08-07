@@ -18,7 +18,7 @@ There is no server-side filesystem for a path to resolve against: `prioris-mcp` 
 
 Always let the script derive `filename` from the path's basename unless you have a specific reason to override it — it's stored purely for reference/display, never used to derive identity, and never resolved against anything server-side.
 
-If the script reports the file doesn't exist or isn't a PDF, say so plainly and ask the user to confirm the path — that's a problem on this side, not something an MCP call could have diagnosed (it never sees a path at all). If it instead exits with an MCP-side error (`invalid_request`, `file_too_large`, `not_found` for an expired session), report that plainly too rather than retrying with variations — those are properties of the file's actual content or of a slow upload outrunning the session TTL, not something fixable by re-running the same command.
+If the script reports the file doesn't exist or isn't a PDF, say so plainly and ask the user to confirm the path — that's a problem on this side, not something an MCP call could have diagnosed (it never sees a path at all). If it instead exits with an MCP-side error — recognizable from the script's error message, not a structured code (see `mcp-contracts.md`'s note on failures); informally these fall into `invalid_request`, `file_too_large`, or `not_found` for an expired session — report that plainly too rather than retrying with variations: those are properties of the file's actual content or of a slow upload outrunning the session TTL, not something fixable by re-running the same command.
 
 ## Always fetch fresh — never reuse a stale id
 
