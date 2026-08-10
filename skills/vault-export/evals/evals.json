@@ -1,0 +1,39 @@
+{
+  "skill_name": "vault-export",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Export all my notes on arXiv 2401.12345 to ~/ObsidianVault/prioris-notes.",
+      "expected_output": "Searches for every note matching the given paper (project-scoped), confirms the destination path, then for each note reads the export resource and writes it via render_note_export.py, reporting how many files were written.",
+      "files": [],
+      "expectations": [
+        "Searches for notes scoped to the given paper via research_notes_search before exporting",
+        "Reads notes://{note_id}/export for each selected note rather than reconstructing frontmatter itself",
+        "Pipes each export result into render_note_export.py rather than hand-writing YAML",
+        "Reports the count and destination of files written at the end"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Export my notes to a vault.",
+      "expected_output": "Asks for the destination vault path first, since nothing else can proceed without it, before asking which notes to export.",
+      "files": [],
+      "expectations": [
+        "Does not attempt to export anything before a destination path is established",
+        "Asks for the vault path explicitly",
+        "Only after the path is known does it ask which notes (or confirm 'all', project-scoped) to export"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Export note abc-123-def to ~/vault, even though I already exported it there last week.",
+      "expected_output": "Overwrites the existing file at the destination without treating that as an error, and tells the user it was overwritten.",
+      "files": [],
+      "expectations": [
+        "Does not refuse or error because a file already exists at the destination",
+        "Explicitly mentions that the existing file was overwritten with the current note content",
+        "Does not attempt to merge the new export with the existing file's content"
+      ]
+    }
+  ]
+}
