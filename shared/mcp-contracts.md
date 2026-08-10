@@ -43,11 +43,11 @@ In practice you rarely need to read a resource explicitly: `parse_full_text` alr
 
 `parse_full_text` (all three sources) and the `.../markdown` resource no longer return the whole document in one call — each call returns one bounded page of Markdown (`offset`, `limit`, `total_length`, `has_more`), capped by a server-side default (currently ~20,000 characters) unless a larger `limit` is passed explicitly. A short paper may fit in a single page (`has_more: false` immediately); a long one won't.
 
-Any skill that needs the *complete* text — e.g. writing the full cached copy to `.prioris/papers/<provider>/<identifier>.md` — must loop rather than assume one call is enough:
+Whoever needs the *complete* text — in practice, always `agents/document-reader.md`, which mediates every full-text touch on behalf of the skills — must loop rather than assume one call is enough:
 
 1. Call with `offset=0` (default), collect `markdown`.
 2. While the response's `has_more` is `true`, call again with `offset` advanced by the length of the `markdown` just received (not by `limit` — the last page can be shorter), and append the new `markdown` to what you have.
-3. Stop once `has_more` is `false`; concatenate the collected pages in order before writing or discussing the text.
+3. Stop once `has_more` is `false`; concatenate the collected pages in order before treating your view of the text as complete.
 
 This applies the same way whether you're calling `parse_full_text` directly or re-reading a cached paper via its `resource_uri` instead of re-parsing.
 
