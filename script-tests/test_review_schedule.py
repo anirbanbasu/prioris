@@ -89,6 +89,16 @@ def test_due_order_orders_by_most_overdue_first(tmp_path: Path) -> None:
     assert rs.due_order(["a", "b"], tmp_path, now) == ["b", "a"]
 
 
+def test_due_order_treats_malformed_timestamp_as_epoch(tmp_path: Path) -> None:
+    now = datetime(2026, 8, 9, tzinfo=UTC)
+    rs.save_schedule(
+        tmp_path,
+        {"corrupt": {"level": 0, "times_asked": 1, "last_asked_at": "not-a-date"}},
+    )
+    rs.record_result(tmp_path, "fresh", "correct", now.isoformat())
+    assert rs.due_order(["fresh", "corrupt"], tmp_path, now) == ["corrupt"]
+
+
 def test_due_order_excludes_not_yet_due(tmp_path: Path) -> None:
     now = datetime(2026, 8, 9, tzinfo=UTC)
     rs.record_result(

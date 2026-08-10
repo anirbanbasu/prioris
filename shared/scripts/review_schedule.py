@@ -99,7 +99,10 @@ def prune(root: Path, note_id: str) -> bool:
 def _due_at(entry: dict | None) -> datetime:
     if entry is None:
         return _EPOCH
-    last = datetime.fromisoformat(entry["last_asked_at"])
+    try:
+        last = datetime.fromisoformat(entry["last_asked_at"])
+    except (KeyError, ValueError):
+        return _EPOCH
     return last + timedelta(days=interval_days(entry.get("level", 0)))
 
 
