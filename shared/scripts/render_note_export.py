@@ -38,7 +38,10 @@ def render(export: dict) -> str:
 
 def write_export(export: dict, vault_dir: Path) -> Path:
     vault_dir.mkdir(parents=True, exist_ok=True)
-    target = vault_dir / f"{export['suggested_filename']}.md"
+    filename = export["suggested_filename"]
+    if not filename.endswith(".md"):
+        filename += ".md"
+    target = vault_dir / filename
     tmp = target.with_suffix(target.suffix + ".tmp")
     tmp.write_text(render(export))
     tmp.replace(target)
