@@ -7,7 +7,7 @@
 set -euo pipefail
 
 input="$(cat)"
-note_id="$(echo "$input" | jq -r '.tool_input.note_id // empty')"
+note_id="$(echo "$input" | jq -r '.tool_input.note_id // empty' 2>/dev/null || true)"
 
 if [ -z "$note_id" ]; then
   exit 0
