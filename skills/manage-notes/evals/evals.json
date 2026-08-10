@@ -1,0 +1,54 @@
+{
+  "skill_name": "manage-notes",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Manage notes.",
+      "expected_output": "Lists every project-scoped note (no filters), showing each note's id, first line of text, tags, and last-updated date, then asks what to do next.",
+      "files": [],
+      "expectations": [
+        "Calls research_notes_search with the project tag in tags_all and no other filters",
+        "Presents id, a short label from the note text, tags, and updated_at for each result",
+        "Asks the user what to do next rather than assuming an action"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Retag the note about federated learning evaluation on arXiv 2401.12345 — I want it under 'methodology' instead of 'evaluation'.",
+      "expected_output": "Searches for matching notes, disambiguates via AskUserQuestion if more than one candidate exists, shows the current tags, confirms the new tag list, then calls research_notes_update with only the tags field changed.",
+      "files": [],
+      "expectations": [
+        "Searches for candidate notes on this paper before assuming which one to retag",
+        "If more than one candidate matches, disambiguates via AskUserQuestion using format_note_choices.py-style labels rather than guessing",
+        "Shows the note's current tags before changing anything",
+        "Calls research_notes_update with tags set explicitly, not text/anchors",
+        "Does not change any other note's tags as a side effect"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Delete every note I have for arXiv 2401.12345 — I'm done with that paper.",
+      "expected_output": "Gathers the paper's complete note set across all skills (quick-read sections, quiz questions/recap, discuss topics), lists it in full, gets one explicit confirmation for the whole set, then deletes each note.",
+      "files": [],
+      "expectations": [
+        "Searches with no skill/type/section tag filter beyond project scope, to gather every note for this paper regardless of which skill created it",
+        "Presents the complete set of notes about to be deleted before asking for confirmation",
+        "Gets one explicit confirmation covering the whole set rather than deleting incrementally without confirmation",
+        "Calls research_notes_delete for each note in the confirmed set",
+        "Does not claim to clean up any local file, since there is none left to clean up"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add a note to arXiv 2401.12345 saying 'their baseline comparison in Table 2 seems to be missing a strong recent method' — this is just for me, not tied to any discussion.",
+      "expected_output": "Creates a new note directly via research_notes_create with the given text and the project tag, without requiring a prior discuss/quick-read/quiz-me session.",
+      "files": [],
+      "expectations": [
+        "Does not require a prior discuss, quick-read, or quiz-me session to exist for this paper first",
+        "Calls research_notes_create with the exact text given and provider/identifier resolved for arxiv 2401.12345",
+        "Includes the project tag among the note's tags",
+        "Does not fabricate additional tags the user didn't ask for beyond the project tag"
+      ]
+    }
+  ]
+}

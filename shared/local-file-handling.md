@@ -1,12 +1,12 @@
 # Shared: The `@file` Convention and the Local Filesystem Source
 
-Referenced by `discuss`, `quick-read`, and `quiz-me`. See `data-layout.md` for where a fetched local file ends up cached and its `source_path` frontmatter field, and `mcp-contracts.md` for the tool signatures behind the upload (`research_localfile_begin_upload`, `research_localfile_upload_chunk`, `research_localfile_finalize_upload`) and `research_localfile_parse_full_text` this doc explains how to drive — the upload trio via `shared/scripts/pdf_chunk_upload_helper.py` rather than directly.
+Referenced by `discuss`, `quick-read`, and `quiz-me`. See `data-layout.md` for providers and what little remains under `.prioris/`, and `mcp-contracts.md` for the tool signatures behind the upload (`research_localfile_begin_upload`, `research_localfile_upload_chunk`, `research_localfile_finalize_upload`) and `research_localfile_parse_full_text` — driven via `shared/scripts/pdf_chunk_upload_helper.py` and `../agents/document-reader.md` rather than called directly.
 
 ## When this applies
 
 The user (or `$ARGUMENTS`) names a file directly — most often via the host agent's `@file` attachment convention, but also a plain path typed inline — rather than a topic, title, or provider identifier. That's a request for the `localfile` provider. There is nothing to search: skip straight to Fetch, below, treating the given path as already-resolved identity.
 
-Only `discuss` and `quick-read` call the tools below directly. `quiz-me` does not — it only ever matches a `@file` against an already-cached `source_path` (see `data-layout.md`); if nothing matches, it tells the user to run `discuss` or `quick-read` on that file first rather than fetching it itself.
+All three skills that accept a local file (`discuss`, `quick-read`, `quiz-me`) follow the same sequence below — none of them call an MCP tool directly for a local file; the upload script handles the three-phase upload, and `document-reader` handles fetch/parse.
 
 ## Uploading the file
 
@@ -20,15 +20,14 @@ Always let the script derive `filename` from the path's basename unless you have
 
 If the script reports the file doesn't exist or isn't a PDF, say so plainly and ask the user to confirm the path — that's a problem on this side, not something an MCP call could have diagnosed (it never sees a path at all). If it instead exits with an MCP-side error — recognizable from the script's error message, not a structured code (see `mcp-contracts.md`'s note on failures); informally these fall into `invalid_request`, `file_too_large`, or `not_found` for an expired session — report that plainly too rather than retrying with variations: those are properties of the file's actual content or of a slow upload outrunning the session TTL, not something fixable by re-running the same command.
 
-## Always fetch fresh — never reuse a stale id
+## Always re-run the upload — never reuse a stale id
 
-Unlike `arxiv`/`europepmc`, where checking `.prioris/papers/<provider>/<identifier>.md` first can skip the MCP call entirely, a local file has no identifier until you ask: identity is a hash of the content, and the server re-decodes and re-hashes whatever bytes the script just sent it on every call, by design, because the file can change on disk between calls without notice. Always re-run the upload script for a named `@file`, even if a file at that same path was fetched earlier in this session. The `id` it returns is the caller-facing identifier (opaque, unrelated to `filename` or the path) — only *after* getting that back do you know whether `.prioris/papers/localfile/<id>.md` already exists and can be reused as-is, skipping the parse step.
+Unlike `arxiv`/`europepmc`, where an identifier is known before any fetch, a local file has no identifier until you ask: identity is a hash of the content, and the server re-decodes and re-hashes whatever bytes the script just sent it on every call, by design, because the file can change on disk between calls without notice. Always re-run the upload script for a named `@file`, even if a file at that same path was uploaded earlier in this session — there is nothing to check locally first. If the file's content hasn't changed, the server's own `StorageBackend` already has a persisted entry for the resulting `id`, so `document-reader`'s fetch/parse step reuses it exactly as it does for `arxiv`/`europepmc` — a re-upload never means a redundant parse.
 
 Only a PDF is accepted, verified by sniffing the decoded bytes' own leading bytes rather than trusting a `.pdf`-looking filename — non-PDF content fails `invalid_request` regardless of what `filename` says (and the script itself sniffs this locally first, per "Uploading the file" above, so this case is normally caught before any MCP call).
 
 ## Fetch sequence
 
 1. Run `pdf_chunk_upload_helper.py` on the resolved path per "Uploading the file" above and parse its one line of stdout JSON to get `id`.
-2. Using that `id`, check whether `.prioris/papers/localfile/<id>.md` already exists. If so, reuse its cached markdown — no need to parse again.
-3. Otherwise call `research_localfile_parse_full_text(id)`, looping on `has_more` exactly as for the other providers (see `mcp-contracts.md#paging-through-full-text`), then write the concatenated markdown to `.prioris/papers/localfile/<id>.md` with frontmatter per `data-layout.md` — including `source_path` set to the local path you resolved the file from (this is bookkeeping on this side only; it's never sent to the server), so `quiz-me` and `reading-log` can later recognize this same file by path rather than by the opaque `id`.
-4. Proceed with Select/Discuss/Summarize/Record exactly as for `arxiv`/`europepmc`, with `provider: localfile` and `identifier: <id>`.
+2. Hand `../agents/document-reader.md` the resolved `(provider: "localfile", identifier: id)` exactly as for `arxiv`/`europepmc` — see the calling skill's own Fetch/Generate step for what it asks `document-reader` to return. There is nothing to cache or check locally first: `document-reader` calls `research_localfile_parse_full_text(id)` directly, looping on `has_more` itself (see `mcp-contracts.md#paging-through-full-text`), and returns only the distilled result the calling step needs — never the full parsed text.
+3. Proceed with the calling skill's next step (Select/Discuss/Record for `discuss`, per-section Generate for `quick-read`, question-bank Generate for `quiz-me`) exactly as for `arxiv`/`europepmc`, with `provider: localfile` and `identifier: id`.

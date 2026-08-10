@@ -24,7 +24,11 @@ uv run --project <plugin root> python -c "<snippet>"
 
 - **`pdf_chunk_upload_helper.py <path> [--filename <name>]`** — with a local `%PDF-` magic-byte check that fails fast before any MCP call, uploads a local PDF to `prioris-mcp` via the three-phase chunked-upload flow (`research_localfile_begin_upload` → `research_localfile_upload_chunk` looped → `research_localfile_finalize_upload`), acting as its own in-process MCP client so every chunk's base64 stays inside the script and never reaches the calling agent's context. Prints one line of result JSON on stdout, or a one-line error on stderr. See `../local-file-handling.md`.
 - **`extract_identifier.py <url-or-doi>`** — extract `{"provider": ..., "identifier": ...}` from a paper URL or bare DOI. See `../url-handling.md`.
-- **`update_notes_section.py <target.md> "<## Header>" <content-file> [--frontmatter <keys.yaml>]`** — merge one named section (and optionally some frontmatter keys) into a `.prioris/discussions/<provider>/<identifier>.md` note, preserving every other section and frontmatter key untouched. See `../data-layout.md` and each skill's Record step.
+- **`project_tag.py [--cwd PATH]`** — derives this project's stable `project:<slug>` note tag from the git remote (or folder name as a fallback). See `../notes-model.md`.
+- **`format_note_choices.py [--max N]`** — turns a `research_notes_search` result list (piped in as JSON on stdin) into deterministic `AskUserQuestion` option labels for picking which existing note to update. See `../notes-model.md`.
+- **`metadata_cache.py {read|write} <provider> <identifier> [...]`** — session-local title/author lookup cache under `.prioris/.metadata-cache/`, so a skill that already looked a paper's metadata up once doesn't pay for a second round trip. See `../data-layout.md`.
+- **`review_schedule.py {record|due|prune} ...`** — `quiz-me`'s local spaced-repetition state under `.prioris/.review/schedule.json`. See `../notes-model.md`.
+- **`render_note_export.py <vault-dir>`** — renders a `notes://{id}/export` resource read (piped in as JSON on stdin) into a YAML-frontmattered Markdown file. See `vault-export`'s `SKILL.md`.
 
 Each script's own module docstring documents its exact usage, output shape, and exit codes — read it directly (`head -30 <script>.py`) if this summary isn't enough; running it with the wrong number of arguments also prints a usage line.
 

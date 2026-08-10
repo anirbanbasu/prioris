@@ -1,29 +1,43 @@
 ---
 name: quiz-me
-description: "Quiz the user on a paper already opened in this conversation (or a cached one), using only that paper's actual content. Triggers: quiz me, test my understanding, ask me about this paper, check if I understood this paper."
+description: "Quiz the user on a paper (named-paper mode), or run a spaced-repetition review session over whatever's due across every paper already quizzed (review mode) — both grounded only in each paper's actual content. Triggers: quiz me, test my understanding, ask me about this paper, check if I understood this paper, what's due for review, review me, spaced repetition, review my quiz questions."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   status: active
   task_type: open-ended
 ---
 
 # Quiz Me
 
-See `../../shared/scope.md` for the scope boundary and tool constraint shared by every skill in this plugin, `../../shared/data-layout.md` for the `.prioris/` layout and frontmatter (including the `source_path` field a local file's cache entry carries), and `../../shared/context-hygiene.md` for when to nudge the user to clear context. This skill reuses the existing cache — no MCP tool beyond the fetch/parse pair (via `discuss`) is required, and that holds for local files too: `quiz-me` never calls `research_localfile_fetch_full_text` itself (see Argument handling below).
+See `../../shared/scope.md` for the scope boundary and tool constraint, `../../shared/mcp-contracts.md` for the core MCP tool contracts (including `#notes`), `../../shared/notes-model.md` for the tag scheme and why review scheduling lives locally rather than in `metadata`, and `../../shared/context-hygiene.md` for when to nudge the user to clear context. Both modes below use `../../agents/document-reader.md` for the one-time question-bank generation and `../../shared/scripts/review_schedule.py` for all scheduling state.
 
-## Workflow
+## Two modes, one loop
 
-1. Identify the target paper explicitly before generating any questions — never silently infer it from whatever happens to be in conversation context, since a long-running session can span several papers and a fresh session (per the plugin's recommended practice of clearing context between papers) may have none. If `$ARGUMENTS` names one, resolve it per Argument handling below. Otherwise, state the paper (title and identifier) you intend to quiz and get explicit confirmation before proceeding — if there's more than one plausible candidate, or none, list the cached options under `.prioris/papers/<provider>/` and ask the user to pick, or run `discuss`'s Search → Fetch steps first if it isn't cached yet. If the user explicitly asks to refetch or get the latest version of a paper that's already cached, run `discuss`'s Fetch step with the forced-refetch override (`../../shared/data-layout.md#forcing-a-refetch`) before quizzing, even though a cached copy already exists — `quiz-me` never calls the fetch tools itself, so this always goes through `discuss`.
-2. Generate questions grounded only in the cached paper's actual text — mix recall (what was measured/reported), comprehension (why the method works, what the mechanism is), and application (how this would apply in a different setting). Do not invent facts the paper doesn't contain.
-3. Ask one question at a time; wait for the user's answer before revealing the correct answer or moving to the next question.
-4. After each answer, give brief feedback — correct / partially correct / incorrect — pointing at the relevant part of the paper rather than a full re-explanation, unless asked for more.
-5. At the end, summarize which concepts the user handled well vs. struggled with, and write a short `## Quiz notes` section (concepts to revisit) rather than a full transcript. Do this automatically — never ask the user whether to save it first. Use `../../shared/scripts/update_notes_section.py` (see `../../shared/scripts/README.md`) to write it: pass the summary as the content file and `"## Quiz notes"` as the section header. If a prior quiz-notes entry exists for that paper, this replaces it automatically in place, leaving any `Discussion`/`Quick read` section untouched.
-6. Per `../../shared/context-hygiene.md`, if this conversation has been running long, close with a brief, polite nudge to clear context before moving to another paper.
+Both modes share the same per-question loop: ask one question at a time, wait for the answer, give feedback pointing at the question's stored anchor as evidence, then record the result via `review_schedule.py record`. They differ only in how the *next question* is selected:
 
-This skill keeps the same out-of-scope boundary as the rest of the plugin: it produces questions and feedback, never drafted prose.
+- **Named-paper mode** — trigger shape "quiz me on this paper" — quizzes one paper's question bank, in whatever order feels natural, generating the bank on first use.
+- **Review mode** — trigger shape "what's due for review" (no paper named) — quizzes whatever's currently due, computed from `.prioris/.review/schedule.json`, potentially spanning several different papers in one session.
+
+## Named-paper mode
+
+1. Identify the target paper explicitly — never silently infer it from conversation context. If `$ARGUMENTS` names one, resolve it per Argument handling below. Otherwise state the candidate (title and identifier) and get explicit confirmation, or run `discuss`'s Search → Select steps first if it isn't established yet.
+2. Check for an existing question bank: `research_notes_search(provider, canonical_identifier, tags_all=[<project_tag>, "skill:quiz-me", "type:question"])`.
+   - Bank exists, and this isn't an explicit request to add/regenerate → reuse it, skip to step 4.
+   - Otherwise → generate (step 3). If the user says the paper has since changed (e.g. a newer arXiv revision), treat that as an explicit regenerate request: there's no version field or force-refetch signal to detect this automatically, and anchors are exact-text quotes, so a revised paper can silently shift or remove the quoted passage and invalidate an old bank's anchors without the skill ever finding out on its own.
+3. **Generate** — dispatch `document-reader` per its "A quiz question bank" scenario: a mixed set of recall/comprehension/application questions grounded only in the paper's actual text, each with one `Anchor`. For each returned question, `research_notes_create(provider, identifier, format, text=<question, plus enough of the expected answer to give feedback against>, anchors=[<anchor>], tags=[<project_tag>, "skill:quiz-me", "type:question"])`.
+4. Ask one question at a time; wait for the user's answer before revealing the correct one or moving on.
+5. After each answer, give brief feedback (correct / partially correct / incorrect) pointing at the question note's anchor rather than a full re-explanation. Record it: `uv run --project <plugin root> python ../../shared/scripts/review_schedule.py record <question note_id> <correct|partial|incorrect>`.
+6. At the end, write/update the one `type:recap` note for this paper — deterministic, one per paper, no disambiguation needed: `research_notes_search(provider, canonical_identifier, tags_all=[<project_tag>, "skill:quiz-me", "type:recap"])`; update in place if found (`research_notes_update`), else `research_notes_create(..., tags=[<project_tag>, "skill:quiz-me", "type:recap"])`. Content: which concepts the user handled well vs. struggled with, not a full transcript.
+7. **Check in on context** — per `../../shared/context-hygiene.md`.
+
+## Review mode
+
+1. `research_notes_search(tags_all=[<project_tag>, "skill:quiz-me", "type:question"])`, looping `offset`/`has_more` to collect every matching note id — project-scoped by default; an explicit "across all my projects" ask drops `<project_tag>` from `tags_all`.
+2. `uv run --project <plugin root> python ../../shared/scripts/review_schedule.py due <id-1> <id-2> ...` — returns only the currently-due ids, most-overdue first. If none are due, say so plainly and stop (offer named-paper mode instead of inventing a review session).
+3. Run steps 4-5 from Named-paper mode over the due questions in exactly that order — this can and normally will span several different papers in one session; that's the point of review mode. Skip step 6 (recap notes are per-paper and belong to named-paper mode).
+4. **Check in on context** — per `../../shared/context-hygiene.md`.
 
 ## Argument handling
 
-If invoked with `$ARGUMENTS` naming a paper id, title, or URL, use that paper — fetching it first via `discuss`'s flow if it isn't cached yet. A title isn't a fetchable identifier: run it through `discuss`'s Search step (`research_arxiv_search` / `research_europepmc_search`) to find the paper first. A URL isn't accepted by any `prioris-mcp` tool either: see `../../shared/url-handling.md` for how to extract the canonical identifier before fetching. Otherwise follow step 1 above: confirm the paper explicitly rather than assuming one from context.
-
-If `$ARGUMENTS` (or the user) instead names a local file directly (e.g. via `@file`), resolve it purely by inspection of the local cache — never call `research_localfile_fetch_full_text` from within `quiz-me`. Look for a `.prioris/papers/localfile/*.md` file whose frontmatter `source_path` matches the given path exactly. If one matches, quiz from it as usual. If none does, the file hasn't been fetched (and hashed/cached) yet — tell the user to run `discuss` or `quick-read` on it first, then retry, rather than fetching it yourself.
+- **Named-paper mode** is triggered by `$ARGUMENTS` (or the user) naming a paper id, title, URL, or local file path — resolve exactly as `discuss`/`quick-read` do (search first if it's a title, `url-handling.md` if it's a URL, `local-file-handling.md` if it's a local path), then follow "Named-paper mode" above from step 1.
+- **Review mode** is triggered by review-shaped language with no paper named ("what's due", "review me", "spaced repetition") — including a bare `quiz me`/`review me` with nothing else in `$ARGUMENTS` and no paper otherwise established in this conversation. If genuinely ambiguous (a paper *is* in recent context but the user's phrasing sounds review-shaped), ask which mode they mean rather than guessing.

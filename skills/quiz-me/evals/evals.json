@@ -4,64 +4,64 @@
     {
       "id": 1,
       "prompt": "Quiz me on arXiv 2401.12345, one question at a time.",
-      "expected_output": "Fetches/uses the cached paper, asks one question at a time waiting for the user's answer before revealing the correct one, gives brief feedback grounded in the text, and appends quiz notes at the end.",
+      "expected_output": "Confirms the paper, generates a question bank via document-reader on first use (each question tagged type:question with an anchor), asks one question at a time waiting for an answer, gives anchor-grounded feedback, records each result via review_schedule.py, and writes/updates a type:recap note at the end.",
       "files": [],
       "expectations": [
-        "Uses the cached copy at .prioris/papers/arxiv/2401.12345.md if present, otherwise runs discuss's fetch flow first",
-        "Asks only one question before waiting for a response, not multiple questions at once",
+        "Searches for an existing type:question bank for this paper before generating a new one",
+        "Dispatches document-reader to generate the bank if none exists, rather than writing questions itself from claimed memory of the paper",
+        "Each generated question note includes an anchors entry with an exact_text_quote or comparable location",
+        "Asks only one question before waiting for a response, not multiple at once",
         "Does not reveal the correct answer before the user responds",
-        "Feedback after each answer references the relevant part of the paper rather than a full re-explanation",
-        "Questions mix recall, comprehension, and application rather than being all one type",
-        "At the end, appends a 'Quiz notes' entry to .prioris/discussions/arxiv/2401.12345.md summarizing concepts handled well vs. struggled with, automatically and without asking whether to save or overwrite it"
+        "Feedback after each answer references the question's stored anchor rather than a full re-explanation",
+        "Calls review_schedule.py record with correct/partial/incorrect after each answer",
+        "At the end, creates or updates a single type:recap note for this paper automatically, without asking whether to save it"
       ]
     },
     {
       "id": 2,
       "prompt": "quiz me on this paper",
-      "expected_output": "With no paper named and nothing established in context, asks which cached paper to use rather than guessing or fabricating one.",
+      "expected_output": "With no paper named and nothing established in context, asks which paper to use rather than guessing, and does not enter review mode since a paper was implied (just not named).",
       "files": [],
       "expectations": [
         "Does not invent or assume a specific paper without confirmation",
-        "Asks the user which cached paper to use, optionally referencing what's under .prioris/papers/<provider>/",
-        "Does not call any prioris-mcp search or fetch tool before a paper is identified"
+        "Asks the user which paper to quiz on",
+        "Does not call research_notes_search for type:question notes across all papers (that would be review mode) before a paper is identified",
+        "Treats this as named-paper mode pending confirmation, not review mode"
       ]
     },
     {
       "id": 3,
-      "prompt": "Quiz me on the paper titled 'Attention Is All You Need'.",
-      "expected_output": "Treats the title as not directly fetchable — runs a search step to resolve it to a canonical identifier before proceeding, rather than passing the title straight to a fetch tool.",
+      "prompt": "What's due for review?",
+      "expected_output": "Enters review mode: searches for every type:question note (project-scoped), computes due-ness via review_schedule.py due, and quizzes only the due ones, most-overdue first, potentially spanning multiple papers.",
       "files": [],
       "expectations": [
-        "Does not call a fetch/parse tool using the raw title as an identifier",
-        "Runs research_arxiv_search (or the appropriate provider search) to resolve the title to a canonical identifier first",
-        "Proceeds to quiz only after resolving and fetching/caching the paper"
+        "Does not ask which single paper to quiz, since no paper was named and the phrasing is review-shaped",
+        "Calls research_notes_search scoped to skill:quiz-me and type:question, not to one specific paper",
+        "Calls review_schedule.py due with the collected note ids to determine the actual queue",
+        "If no questions are due, says so plainly and offers named-paper mode instead of fabricating a review session",
+        "Does not write or update a type:recap note during review mode"
       ]
     },
     {
       "id": 4,
-      "prompt": "quiz me",
-      "expected_output": "Even though a paper (arXiv 2401.12345) was fetched and discussed earlier in this same conversation, does not silently assume it's the quiz target — states the candidate paper by title/identifier and asks for explicit confirmation before generating questions.",
-      "files": [
-        ".prioris/papers/arxiv/2401.12345.md"
-      ],
+      "prompt": "Before you quiz me on arXiv 2401.12345, can you refetch it? A new version came out and I want to be quizzed on the updated content.",
+      "expected_output": "Regenerates the question bank because the paper was explicitly refetched to a newer version, rather than reusing the existing (now potentially anchor-invalid) bank.",
+      "files": [],
       "expectations": [
-        "Does not start generating quiz questions without first naming the candidate paper",
-        "Explicitly asks the user to confirm the paper (by title or identifier) rather than assuming from context",
-        "If the user confirms, proceeds to quiz that paper; does not require a redundant search/fetch since it's already cached"
+        "Recognizes the explicit refetch-to-newer-version request as a reason to regenerate the bank, not just reuse the existing one",
+        "Dispatches document-reader again for the refreshed content and regenerated questions/anchors",
+        "Does not quiz from the stale pre-existing bank's anchors before the regeneration completes"
       ]
     },
     {
       "id": 5,
-      "prompt": "Before you quiz me on arXiv 2401.12345, can you refetch it? A new version came out and I want to be quizzed on the updated content.",
-      "expected_output": "Delegates the forced refetch to discuss's Fetch step rather than calling any fetch tool itself, waits for the refreshed cache, then quizzes from the newly fetched text.",
-      "files": [
-        ".prioris/papers/arxiv/2401.12345.md"
-      ],
+      "prompt": "Quiz me on the paper titled 'Attention Is All You Need'.",
+      "expected_output": "Treats the title as not directly resolvable — runs a search step (per discuss's Search/Select) to resolve it to a canonical identifier before proceeding to named-paper mode.",
+      "files": [],
       "expectations": [
-        "Does not call research_arxiv_fetch_full_text or research_arxiv_parse_full_text directly itself",
-        "Explicitly runs discuss's Fetch step with the forced-refetch override despite a cached copy already existing",
-        "Does not proceed to quiz from the stale pre-existing cache before the refetch completes",
-        "Questions are grounded in the refreshed paper content once the forced refetch completes"
+        "Does not treat the raw title as a usable identifier for research_notes_search's canonical_identifier filter",
+        "Runs a provider search to resolve the title to a canonical identifier first",
+        "Proceeds to named-paper mode's question-bank check only after resolving the identifier"
       ]
     }
   ]

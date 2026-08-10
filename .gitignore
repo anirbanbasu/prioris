@@ -9,3 +9,5 @@ node_modules/
 
 *-ideas.txt
 tmp/
+docs/superpowers/
+coverage.json

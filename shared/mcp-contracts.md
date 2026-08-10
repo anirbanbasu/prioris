@@ -1,6 +1,6 @@
 # Shared: Core MCP Tool Contracts
 
-Referenced by `discuss` and `quick-read`. Assumes a companion MCP server (the `prioris-mcp` server, https://pypi.org/project/prioris-mcp/) exposing at minimum:
+Referenced by `discuss`, `quick-read`, `quiz-me`, and `reading-log`. Assumes a companion MCP server (the `prioris-mcp` server, https://pypi.org/project/prioris-mcp/) exposing at minimum:
 
 ## A note on failures
 
@@ -9,7 +9,7 @@ Every tool below fails by raising an opaque `ToolError` with a human-readable me
 **arXiv**
 - `research_arxiv_search(query, max_results=10, start=0, sort_by?, sort_order?) -> results[]` (each: `arxiv_id, title, abstract, authors[{name, affiliation}], categories, primary_category, published, updated, pdf_url, doi?, journal_ref?, comment?`)
 - `research_arxiv_fetch_metadata(arxiv_ids: []) -> {results: [...], not_found: [...]}`
-- `research_arxiv_fetch_full_text(arxiv_id, format: "pdf"|"html") -> {location, format, size_bytes, served_from_storage, resource_uri}`
+- `research_arxiv_fetch_full_text(arxiv_id, format: "pdf"|"html") -> {location, format, size_bytes, served_from_storage, resource_uri}` — callers should try `format: "pdf"` first and retry with `"html"` only on failure; see `agents/document-reader.md`'s "How to fetch and parse" for the actual sequencing every skill relies on (all fetches go through that agent, not called directly).
 - `research_arxiv_parse_full_text(arxiv_id, format, offset=0, limit=None) -> {markdown, offset, limit, total_length, has_more, resource_uri}` — fails `not_found` if the id hasn't been fetched first. Paginated — see "Paging through full text" below.
 - `research_arxiv_list_top_n(include_categories, n, exclude_categories?) -> results[]` — most recent items across one or more arXiv taxonomy codes (`include_categories` combined with AND, optional `exclude_categories` combined with ANDNOT), e.g. `cs.CL`
 
@@ -30,7 +30,7 @@ Every tool below fails by raising an opaque `ToolError` with a human-readable me
 - `research_resolve_identifier(identifier, format) -> {identifier, provider, resolved_url, format, full_text_available?}` — resolves an arXiv id, a Europe PMC id/PMCID, or a DOI of unknown provider to its canonical form. Does **not** accept a URL — a bare DOI is resolved via a doi.org redirect (checked against an allowlisted domain before any further request), everything else is self-identifying by pattern with no network round-trip. Standalone utility, not a required first step when the provider is already known. Does not resolve local files — there is nothing to resolve; a local file's identity is its content hash, established only by calling `research_localfile_fetch_full_text` itself.
 
 **Search over fetched content**
-- `research_search_fetched(query, provider?, identifier?, format?) -> {matches: [{provider, identifier, format, snippet, offset, score}]}` — full-text search (FTS5 syntax: plain keywords, phrase quotes, `AND`/`OR`/`NEAR` all work) over content already fetched *and* parsed on the server; never triggers a fetch or parse itself, so it only surfaces papers some caller (this session or another) already pulled in before. Optionally scoped to one `provider`, one `(provider, identifier)` pair (`identifier` requires `provider`), and/or one `format` — `identifier` scopes the search to one document, it doesn't look that document up on its own; `query` is still required. Matches don't carry `title`/`authors` — cross-reference `.prioris/papers/<provider>/<identifier>.md` locally for those where available. See `discuss`'s local-search-first step for how this is used in practice.
+- `research_search_fetched(query, provider?, identifier?, format?) -> {matches: [{provider, identifier, format, snippet, offset, score}]}` — full-text search (FTS5 syntax: plain keywords, phrase quotes, `AND`/`OR`/`NEAR` all work) over content already fetched *and* parsed on the server; never triggers a fetch or parse itself, so it only surfaces papers some caller (this session or another) already pulled in before. Optionally scoped to one `provider`, one `(provider, identifier)` pair (`identifier` requires `provider`), and/or one `format` — `identifier` scopes the search to one document, it doesn't look that document up on its own; `query` is still required. Matches don't carry `title`/`authors` — enrich via `shared/scripts/metadata_cache.py read <provider> <identifier>` where a cache entry exists. See `discuss`'s local-search-first step for how this is used in practice.
 
 **Resources** (read-only; never trigger a fetch or parse — read one that doesn't exist yet and you get a plain not-found, not an error):
 - `research://{provider}/{identifier}/{format}/fulltext` — persisted raw full text, returned whole (not paginated)
@@ -43,13 +43,28 @@ In practice you rarely need to read a resource explicitly: `parse_full_text` alr
 
 `parse_full_text` (all three sources) and the `.../markdown` resource no longer return the whole document in one call — each call returns one bounded page of Markdown (`offset`, `limit`, `total_length`, `has_more`), capped by a server-side default (currently ~20,000 characters) unless a larger `limit` is passed explicitly. A short paper may fit in a single page (`has_more: false` immediately); a long one won't.
 
-Any skill that needs the *complete* text — e.g. writing the full cached copy to `.prioris/papers/<provider>/<identifier>.md` — must loop rather than assume one call is enough:
+Whoever needs the *complete* text — in practice, always `agents/document-reader.md`, which mediates every full-text touch on behalf of the skills — must loop rather than assume one call is enough:
 
 1. Call with `offset=0` (default), collect `markdown`.
 2. While the response's `has_more` is `true`, call again with `offset` advanced by the length of the `markdown` just received (not by `limit` — the last page can be shorter), and append the new `markdown` to what you have.
-3. Stop once `has_more` is `false`; concatenate the collected pages in order before writing or discussing the text.
+3. Stop once `has_more` is `false`; concatenate the collected pages in order before treating your view of the text as complete.
 
 This applies the same way whether you're calling `parse_full_text` directly or re-reading a cached paper via its `resource_uri` instead of re-parsing.
+
+## Notes
+
+`prioris-mcp`'s `NotesBackend` — CRUD/search over user-authored notes, plus a read-only export resource. Unlike everything else on this page, there is no upstream API behind these calls; `NotesBackend` is entirely a `prioris-mcp` design decision. **Not yet in the released `prioris-mcp`** — see Global Constraints in the plan this section was added for; the signatures below are taken from `prioris-mcp`'s `v2-notes-and-beyond` branch (`docs/requirement-specification/06-interface-specification.md#notes` and `storage/02-notes-storage.md`).
+
+A note's full shape: `{"id": <UUID string>, "provider": <string>, "canonical_identifier": <string>, "format": <string|null>, "text": <string>, "anchors": [<Anchor>, ...], "author_name": <string|null>, "tags": [<string>, ...], "metadata": <object[string,string]|null>, "created_at": <ISO 8601>, "updated_at": <ISO 8601>}`. An `Anchor` is `{"location": {"page_number": <int|null>, "section_heading": <string|null>, "paragraph_index": <int|null>} | null, "selectors": {"exact_text_quote": <string|null>, "prefix_context": <string|null>, "suffix_context": <string|null>} | null}` — an entry with both `location` and `selectors` absent (or all-null within them) fails `invalid_request`; anchors are unresolved positional hints, never validated or re-resolved against the paper's own text.
+
+- `research_notes_create(provider, identifier, format?, text, anchors?=[], author_name?=null, tags?=[], metadata?=null) -> Note` — `identifier` is provider-native (not yet canonicalised); resolved to its canonical/pinned form server-side before persisting (skipped when `format` is omitted, e.g. a note predating any fetch). For `localfile`, `identifier` is used as-is (already a stable, server-minted id). Fails `invalid_request` if `provider` isn't `arxiv`/`europepmc`/`localfile`, or any `anchors` entry is fully empty.
+- `research_notes_read(note_id) -> Note` — fails `not_found` if no note has this id.
+- `research_notes_update(note_id, text?, anchors?, tags?, metadata?) -> Note` — every field is optional; an omitted field is left unchanged (`anchors: []`/`tags: []`/`metadata: {}` are valid, distinct-from-omitted ways to clear those three). `provider`/`canonical_identifier`/`format`/`author_name` cannot be changed by this tool — changing "which document" is a new note, not an edit. Fails `not_found` if `note_id` doesn't exist.
+- `research_notes_delete(note_id) -> bool` — `true` if a note was found and removed, `false` if already absent; never an error for an absent id.
+- `research_notes_search(provider?, canonical_identifier?, format?, date_from?, date_to?, keyword?, author_filter?="any", author_name?, tags_all?=[], tags_any?=[], tags_exclude?=[], offset?=0, limit?=50) -> {notes: [<Note>, ...], offset, limit, total, has_more}` — every filter is optional; no filters returns everything, paginated. `canonical_identifier` given without `provider` fails `invalid_request`. `author_filter` is a tri-state (`any`/`mine`/`named`, not a nullable string) since `author_name IS NULL` ("mine") and "no author filter at all" are different queries; `author_name` is only meaningful with `author_filter="named"`, and giving it with any other value fails `invalid_request`. `date_from`/`date_to` filter on `created_at`. `tags_all`/`tags_any`/`tags_exclude` are must-have-every / must-have-at-least-one / must-have-none over the exact-match `tags` list — **not** keyword-indexed, unlike `keyword`, which matches `text` only (never `anchors`, never `metadata`). Default order is `created_at` descending (most recent first); a `keyword` search orders by relevance instead. Never triggers a fetch or parse.
+- `notes://{note_id}/export` (resource, read-only) — `{"suggested_filename": <string, the note's own id, already suffixed with ".md">, "frontmatter": <object, every Note field except text>, "markdown_body": <string, exactly the note's text>}`. The server never writes this to a file itself; the caller (see `vault-export`, and `shared/scripts/render_note_export.py`) renders `frontmatter` into whatever dialect its target expects. Reading an id that doesn't exist is a plain not-found, like every other resource on this page.
+
+`metadata` is caller-owned, opaque scratch space: persisted and returned verbatim, never interpreted, and **not filterable or searchable** via `search` — a key that matters enough to filter/search by belongs in `tags` (or a new dedicated field), not `metadata`. See `notes-model.md` for why this plugin's spaced-repetition state deliberately does not use it.
 
 `rmotd` additionally needs `research_arxiv_list_top_n`, documented in its own SKILL.md rather than here since it's the only tool `rmotd` uses.
 
