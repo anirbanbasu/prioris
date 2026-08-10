@@ -4,39 +4,39 @@
     {
       "id": 1,
       "prompt": "What have I been reading about reinforcement learning in the last month?",
-      "expected_output": "A local-only recap of cached discussions matching the keyword and date range, using the current date to resolve 'last month' to an absolute range, sorted most recent first.",
+      "expected_output": "Calls research_notes_search with a project-scoped tags_all filter, date_from/date_to converted from 'last month' using the current date, and keyword='reinforcement learning', then presents results most recent first.",
       "files": [],
       "expectations": [
-        "Makes no prioris-mcp tool calls at any point",
-        "Converts 'last month' to an absolute date range using the current date before filtering",
-        "Filters on read_at (falling back to fetched_at, then file mtime) for the date range",
-        "Matches 'reinforcement learning' case-insensitively against title, tags, or body",
+        "Calls research_notes_search (not any fetch/search tool) and nothing else",
+        "Includes the project tag in tags_all by default",
+        "Converts 'last month' to an absolute date_from/date_to range using the current date before calling",
+        "Passes 'reinforcement learning' as the keyword filter",
         "Results are sorted most recent first unless told otherwise",
-        "If the keyword matches nothing, reports it as not found in the cache rather than searching externally"
+        "If the keyword matches nothing, reports it as a zero-result filter rather than searching externally"
       ]
     },
     {
       "id": 2,
-      "prompt": "Show me everything I've discussed on europepmc about CRISPR, and also tell me if I've looked at arXiv id 9999.99999 — I don't think it's cached.",
-      "expected_output": "Scans only the europepmc directory for the CRISPR keyword filter, and separately reports arXiv id 9999.99999 as not found in the local cache without attempting to fetch or search for it.",
+      "prompt": "Show me everything I've discussed on europepmc about CRISPR, and also tell me if I've got any notes on arXiv id 9999.99999.",
+      "expected_output": "Runs one research_notes_search scoped to provider=europepmc and keyword=CRISPR, and a separate research_notes_search scoped to provider=arxiv and canonical_identifier=9999.99999, reporting the second as having no notes if it returns none.",
       "files": [],
       "expectations": [
-        "Restricts the CRISPR keyword scan to .prioris/discussions/europepmc/ only",
-        "Reports arXiv id 9999.99999 as not found in the cache rather than fetching or searching for it",
-        "Does not call research_resolve_identifier or any search tool for the unmatched id",
-        "Presents the not-found id separately from the matched CRISPR results, not silently omitted"
+        "Scopes the CRISPR search to provider=europepmc",
+        "Runs a separate research_notes_search call for the arxiv 9999.99999 identifier, pairing canonical_identifier with provider as required",
+        "Does not call any fetch or resolve tool for the unmatched id",
+        "Presents the two results separately, not merged into one undifferentiated list"
       ]
     },
     {
       "id": 3,
       "prompt": "Recap my reading history.",
-      "expected_output": "Lists every cached discussion with no filters applied, one paragraph per item (title, provider, identifier, date, tags if present, 2-3 sentence gist), sorted most recent first; if the cache is empty, says so plainly.",
+      "expected_output": "Lists every project-scoped note with no further filters, grouped by paper, one paragraph per paper drawing the gist from quick-read sections first, sorted most recent first.",
       "files": [],
       "expectations": [
-        "Treats the absence of filters as 'list everything' rather than asking for clarification",
-        "Each item's paragraph includes title, provider, identifier, and a relevant date",
-        "Gist is drawn from the Quick read section if present, otherwise other notes, or states plainly if the file has no synthesized content yet",
-        "If .prioris/discussions/ doesn't exist or is empty, states there is nothing to log yet instead of erroring or fabricating entries"
+        "Treats the absence of filters as 'list everything' (project-scoped) rather than asking for clarification",
+        "Groups notes by (provider, canonical_identifier) rather than presenting one row per note",
+        "Draws each paper's gist from section:background-and-research-problem/section:takeaways-and-future-avenues quick-read notes first, falling back to discuss/quiz-me notes, and says so plainly if none exist yet",
+        "If research_notes_search returns zero results overall, states there is nothing logged yet instead of erroring or fabricating entries"
       ]
     }
   ]

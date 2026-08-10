@@ -1,46 +1,40 @@
 ---
 name: reading-log
-description: "List concise, one-paragraph recaps of already-cached paper discussions under .prioris/discussions/, so the user can pick up a prior thread — filterable by provider, a list of identifiers, a date range, and/or keywords. Purely local: never calls prioris-mcp, and never fetches or searches to fill in a filter that matches nothing — an unmatched id or keyword is reported as not-found in the cache instead. Triggers: reading log, what have I been reading, list my discussions, what did we cover on, pick up where I left off, show my reading history, what papers have I read, catch me up, recap."
+description: "Recap prior discussions, quick-reads, and quiz sessions by searching prioris-mcp's NotesBackend — filterable by provider, canonical identifiers, a date range, and/or keywords. Also the plugin's general recall search over your own notes. Triggers: reading log, what have I been reading, list my discussions, what did we cover on, pick up where I left off, show my reading history, what papers have I read, catch me up, recap, search my notes, find my notes about."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   status: active
   task_type: open-ended
 ---
 
 # Reading Log
 
-See `../../shared/scope.md` for the scope boundary shared by every skill in this plugin, `../../shared/data-layout.md` for providers, `.prioris/` layout, and frontmatter schema, and `../../shared/context-hygiene.md` for when to nudge the user to clear context. Unlike the other skills here, `reading-log` needs none of the shared MCP tool contracts (`../../shared/mcp-contracts.md`) — see "No MCP dependency" below.
+See `../../shared/scope.md` for the scope boundary, `../../shared/mcp-contracts.md` for `research_notes_search`'s contract (`#notes`), `../../shared/notes-model.md` for the tag scheme, and `../../shared/context-hygiene.md` for when to nudge the user to clear context.
 
 ## Scope
 
-A digest of what's already been discussed, not a way to discover or read anything new. `reading-log` only reads files already present under `.prioris/discussions/<provider>/*.md` — it never calls a `prioris-mcp` tool, never fetches a paper, and never searches arXiv/Europe PMC to resolve a filter. If a requested id or keyword doesn't match anything in the cache, that is the answer: report it as not found, don't try to make it true by fetching or searching. This mirrors the plugin's tool constraint (see shared doc) but goes further here — even the fallback of "search for it" is out of scope for this skill specifically, because its whole point is reporting on what's *already* local.
-
-Keep it cheap: read the (already condensed) discussion notes, not the full cached paper text under `.prioris/papers/`. A recap is a paragraph, not a re-read.
+A digest of what's already been recorded, drawn entirely from `research_notes_search` — never a way to discover or read anything new, and never a fetch or a search of arXiv/Europe PMC. Absorbs the "search my notes for X" recall use case via the `keyword` filter, so there's no separate `search-notes` skill. Project-scoped by default (via the same `<project_tag>` every other skill's notes carry); an explicit "across all my projects" ask drops that filter. This is a local IPC call to `prioris-mcp` over stdio with the same reliability characteristics as a file read — `prioris-mcp` is a local, single-user server, not a hosted multi-tenant service — so this is a changed mechanism from the old `.prioris/discussions/` file scan, not a lost guarantee.
 
 ## Filters
 
-All filters are optional and combine with AND when more than one is given. If none are given, list every cached discussion.
+All optional, combined with AND:
 
-- **provider** — `arxiv`, `europepmc`, `localfile`, or any combination (default: all). Restricts which `.prioris/discussions/<provider>/` subdirectories are scanned.
-- **ids** — one or more canonical identifiers (or a title/URL the user expects to already be cached — resolve it to an identifier by inspection of cached frontmatter, not by calling `research_resolve_identifier` or any search tool). Keep only files whose frontmatter `identifier` matches. A local file path (e.g. as given via `@file`) is also accepted here: for `provider: localfile` entries, match it against the frontmatter `source_path` field instead of `identifier` (see `../../shared/data-layout.md`) — an exact string match on the path as given, not a filesystem hash or existence check. Any requested id (or local path) that matches no cached file is reported by name as not cached — do not fetch it, and for a local path specifically, do not re-hash the file to check either; that would call `research_localfile_fetch_full_text`, which this skill never does (see "No MCP dependency" below).
-- **date range** — on `read_at` frontmatter (fall back to `fetched_at`, then file mtime, if `read_at` is absent). Accepts natural language ("last week", "since June", "in July 2026") — convert relative phrases to absolute dates using the current date before filtering.
-- **keywords** — one or more terms, matched case-insensitively against `title`, `tags`, and the discussion note body (e.g. the "Quick read" section). Multiple keywords are ANDed by default unless the user asks for "any of" / OR. A keyword matching nothing is reported as a zero-result filter, not a cue to search externally.
+- **provider** — `arxiv`, `europepmc`, `localfile`, or any combination; maps to `research_notes_search`'s `provider` (one call per provider if more than one is named, since a single call takes at most one).
+- **canonical identifier(s)** — maps to `canonical_identifier` (requires pairing with exactly one `provider` per call, per the tool's own `invalid_request` rule — run one search per `(provider, identifier)` pair if several are named).
+- **date range** — maps to `date_from`/`date_to` (filters on `created_at`). Accepts natural language ("last week", "since June") — convert to absolute ISO dates using the current date before calling.
+- **keywords** — maps to `keyword` (matches a note's `text` only, never `tags`/`anchors`/`metadata`). A keyword matching nothing is reported as a zero-result filter, not a cue to search externally.
 
 ## Workflow
 
-1. Parse the request for filters (provider / ids / date range / keywords); if the user gives none, treat this as "list everything."
-2. Enumerate candidate files under `.prioris/discussions/<provider>/*.md` for the selected provider(s). If the directory tree doesn't exist or is empty, say so plainly and stop — there is nothing to log yet.
-3. Apply filters in order (provider narrows the directory scan; ids, date range, and keywords narrow the file list). Track any requested id or keyword that produced zero matches so it can be reported alongside the results.
-4. For each remaining file, read its frontmatter and body, and produce one paragraph containing: title, provider, identifier, the relevant date (`read_at` or fallback), tags if present, and a 2-3 sentence gist. Draw the gist from the "Quick read" section if present; otherwise from other discussion/quiz notes in the file; if the file has no synthesized content yet (frontmatter only), say so rather than inventing a summary.
-5. Sort by most recent date first unless the user asks for a different order (e.g. by provider, alphabetical by title).
-6. Present the list, then separately list any requested ids/keywords that matched nothing, phrased as "not found in the local cache" — not as an error.
-7. Close by pointing at `discuss`, `quiz-me`, or `quick-read` with the relevant `identifier` for any item the user wants to revisit.
-8. Per `../../shared/context-hygiene.md`, if this conversation has been running long (e.g. scanning many discussions, or picking up several prior threads), close with a brief, polite nudge to clear context before diving back into a paper.
-
-## No MCP dependency
-
-This skill performs no `prioris-mcp` calls at all — only local file reads under `.prioris/discussions/`. If asked to filter by something not yet in the cache, do not fall back to `discuss`'s search/fetch flow from within `reading-log`; tell the user it isn't cached and let them invoke `discuss` (or `quick-read`) themselves if they want to add it. This applies to a local file path given as an `ids` filter exactly as it does to any other identifier: `reading-log` matches it against already-cached `source_path` frontmatter and nothing else — it never calls `research_localfile_fetch_full_text` to check the file's current content, so a matching path is reported purely on the strength of the stored string, not a fresh hash.
+1. Parse the request into the filters above; no filters means "list everything," project-scoped.
+2. Compute `<project_tag>` (unless cross-project was explicitly requested) and call `research_notes_search(tags_all=[<project_tag>], provider?, canonical_identifier?, date_from?, date_to?, keyword?, offset=0, limit=50)`, looping on `has_more`/advancing `offset` until exhausted or enough results are in hand to answer the request.
+3. Group results by `(provider, canonical_identifier)`. For each paper, draw a 2-3 sentence gist preferentially from its `section:background-and-research-problem` and `section:takeaways-and-future-avenues` quick-read notes if present (a further `research_notes_search` scoped to `skill:quick-read` and those two `section:` tags); otherwise from the most recent `topic:*` discuss note; otherwise from a `type:recap` quiz-me note; otherwise state plainly that there's no synthesized content yet for that paper.
+4. Enrich each paper's title/authors via `uv run --project <plugin root> python ../../shared/scripts/metadata_cache.py read <provider> <identifier>`; on a cache miss, fall back to `research_arxiv_fetch_metadata`/`research_europepmc_fetch_metadata` and write the result back with `metadata_cache.py write` so later lookups this session are free.
+5. Sort most-recent-first by default (by the latest matching note's `updated_at` per paper) unless the user asks for a different order.
+6. Present the list, then separately list any requested identifiers/keywords that matched nothing, phrased as "no notes found" — not an error.
+7. Point at `discuss`, `quick-read`, or `quiz-me` with the relevant `(provider, identifier)` for any item the user wants to revisit.
+8. Per `../../shared/context-hygiene.md`, if this conversation has been running long, close with a brief, polite nudge to clear context before diving back into a paper.
 
 ## Argument handling
 
-If invoked with `$ARGUMENTS` containing filter language (a provider name, one or more identifiers or local file paths, a date phrase, or keywords/topics, in any combination or free-text mix), parse it into the filters above and go straight to the Workflow. Otherwise list everything cached, most recent first.
+If invoked with `$ARGUMENTS` containing filter language (a provider name, one or more identifiers, a date phrase, or keywords/topics, in any combination or free-text mix), parse it into the filters above and go straight to the Workflow. Otherwise list everything, project-scoped, most recent first.
