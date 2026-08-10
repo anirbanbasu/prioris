@@ -1,10 +1,9 @@
 """Derive a stable "project:<slug>" tag for the current repo/working directory.
 
 NotesBackend is one global, non-project-scoped store per prioris-mcp instance
-(see docs/superpowers/specs/2026-08-09-notes-backend-integration-design.md's
-"Tagging convention"). Every note this plugin creates carries this tag so
-research_notes_search's tags_all filter can recover project boundaries the
-server itself doesn't know about.
+(see ../notes-model.md's "Tagging convention"). Every note this plugin
+creates carries this tag so research_notes_search's tags_all filter can
+recover project boundaries the server itself doesn't know about.
 
 Usage:
     uv run --project <plugin root> python shared/scripts/project_tag.py [--cwd PATH]
