@@ -1,6 +1,6 @@
 # Shared: The `@file` Convention and the Local Filesystem Source
 
-Referenced by `discuss`, `quick-read`, and `quiz-me`. See `data-layout.md` for providers and what little remains under `.prioris/`, and `mcp-contracts.md` for the tool signatures behind the upload (`research_localfile_begin_upload`, `research_localfile_upload_chunk`, `research_localfile_finalize_upload`) and `research_localfile_parse_full_text` — driven via `shared/scripts/pdf_chunk_upload_helper.py` and `../../agents/document-reader.md` rather than called directly.
+Referenced by `discuss`, `quick-read`, and `quiz-me`. See `data-layout.md` for providers and what little remains under `.prioris/`, and `mcp-contracts.md` for the tool signatures behind the upload (`research_localfile_begin_upload`, `research_localfile_upload_chunk`, `research_localfile_finalize_upload`) and `research_localfile_parse_full_text` — driven via `shared/scripts/pdf_chunk_upload_helper.py` and `../agents/document-reader.md` rather than called directly.
 
 ## When this applies
 
@@ -29,5 +29,5 @@ Only a PDF is accepted, verified by sniffing the decoded bytes' own leading byte
 ## Fetch sequence
 
 1. Run `pdf_chunk_upload_helper.py` on the resolved path per "Uploading the file" above and parse its one line of stdout JSON to get `id`.
-2. Hand `../../agents/document-reader.md` the resolved `(provider: "localfile", identifier: id)` exactly as for `arxiv`/`europepmc` — see the calling skill's own Fetch/Generate step for what it asks `document-reader` to return. There is nothing to cache or check locally first: `document-reader` calls `research_localfile_parse_full_text(id)` directly, looping on `has_more` itself (see `mcp-contracts.md#paging-through-full-text`), and returns only the distilled result the calling step needs — never the full parsed text.
+2. Hand `../agents/document-reader.md` the resolved `(provider: "localfile", identifier: id)` exactly as for `arxiv`/`europepmc` — see the calling skill's own Fetch/Generate step for what it asks `document-reader` to return. There is nothing to cache or check locally first: `document-reader` calls `research_localfile_parse_full_text(id)` directly, looping on `has_more` itself (see `mcp-contracts.md#paging-through-full-text`), and returns only the distilled result the calling step needs — never the full parsed text.
 3. Proceed with the calling skill's next step (Select/Discuss/Record for `discuss`, per-section Generate for `quick-read`, question-bank Generate for `quiz-me`) exactly as for `arxiv`/`europepmc`, with `provider: localfile` and `identifier: id`.
