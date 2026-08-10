@@ -4,68 +4,51 @@
     {
       "id": 1,
       "prompt": "Give me a quick read of arXiv 2403.05131 — I want the tl;dr before deciding if it's worth a deep dive.",
-      "expected_output": "A structured summary under exactly the seven required headers, in order, grounded only in the paper's actual text, followed by a write-back of the Quick read section to the discussion note.",
+      "expected_output": "For each of the six fixed sections, searches for an existing note first; dispatches document-reader once for whichever are missing; presents all six under the fixed headers, in order, grounded only in the paper's actual text; records any freshly generated sections as new notes.",
       "files": [],
       "expectations": [
-        "Output uses the seven headers in order: Research gap / question(s), Background, Key assumptions, Findings, Conclusions, Shortcomings, Future directions",
-        "Checks .prioris/papers/arxiv/2403.05131.md for a cache before calling any fetch tool",
+        "Searches research_notes_search per section tag before generating anything",
+        "Output uses exactly these six headers in order: Background and research problem, Key assumptions, Methodology, Results and analyses, Documented shortcomings, Takeaways and future avenues",
+        "Delegates generation of any missing sections to document-reader rather than reading full text directly",
         "If a section genuinely doesn't apply, says so briefly rather than fabricating content",
-        "Appends or updates a 'Quick read' section in .prioris/discussions/arxiv/2403.05131.md using the same seven headers",
-        "Sets read_at in the discussion note's frontmatter if not already set",
-        "Writes the quick-read entry automatically, without asking the user whether to save or overwrite it"
+        "Calls research_notes_create for each freshly generated section, tagged with the matching section:<name> tag",
+        "Writes the new section notes automatically, without asking the user whether to save them"
       ]
     },
     {
       "id": 2,
       "prompt": "Search for a paper about vision transformers for medical image segmentation and quick-read it for me.",
-      "expected_output": "Runs a Search/Select step like discuss (ranked candidate list, confirm which paper) before fetching, picking a provider consistent with the plugin's subject-matter routing rule and stating which provider it used.",
+      "expected_output": "Runs a Search/Select step identical to discuss's, including asking which provider(s) to search, before touching the per-section find-or-create flow.",
       "files": [],
       "expectations": [
-        "Presents a ranked list of candidates (provider, title, authors, year, abstract snippet) before fetching full text",
+        "Asks via AskUserQuestion which of arXiv / Europe PMC / both to search",
+        "Presents a ranked list of candidates (provider, title, authors, year, abstract snippet) before generating any section",
         "Confirms with the user which single paper to open, unless one is already unambiguous",
-        "Does not fetch full text during the search/select step",
-        "States or implies which provider (arxiv vs europepmc) it searched, consistent with the plugin's routing rule rather than silently picking one"
+        "Does not generate any section content during the search/select step"
       ]
     },
     {
       "id": 3,
-      "prompt": "Quick summary of this paper: https://arxiv.org/abs/2401.09876",
-      "expected_output": "Extracts the canonical arXiv identifier from the URL before calling any tool, then goes straight to fetch (skipping search/select since the paper is already named), and produces the standard seven-header summary.",
+      "prompt": "Quick read arXiv 2403.05131 again — all six sections already exist from before.",
+      "expected_output": "Finds all six existing section notes via research_notes_search and presents them directly, without dispatching document-reader or creating/updating any note.",
       "files": [],
       "expectations": [
-        "Does not pass the raw URL to any prioris-mcp tool call",
-        "Extracts identifier 2401.09876 from the URL before fetching",
-        "Skips the search/select step since a specific paper was already named",
-        "Produces the same seven-header structure as a directly-named-id request"
+        "Calls research_notes_search for each of the six section tags before doing anything else",
+        "Does not dispatch document-reader, since every section already has a note",
+        "Presents the six existing notes' text under the standard headers",
+        "Does not call research_notes_create or research_notes_update, since nothing changed"
       ]
     },
     {
       "id": 4,
-      "prompt": "Quick read arXiv 2403.05131 again.",
-      "expected_output": "Recognizes the paper already has a recorded Quick read section and presents that cached section directly, without re-fetching or re-summarizing.",
-      "files": [
-        ".prioris/discussions/arxiv/2403.05131.md"
-      ],
+      "prompt": "Redo just the methodology section for arXiv 2403.05131 — I think it's not comprehensive enough.",
+      "expected_output": "Only the methodology section is regenerated; the other five existing sections are left untouched, and the methodology note is updated in place via research_notes_update rather than creating a duplicate.",
+      "files": [],
       "expectations": [
-        "Checks .prioris/discussions/arxiv/2403.05131.md for an existing 'Quick read' section before calling any MCP tool",
-        "Does not call research_arxiv_fetch_full_text, research_arxiv_parse_full_text, or any other prioris-mcp tool",
-        "Presents the cached seven-header content rather than regenerating a new summary",
-        "Does not rewrite or append to the discussion note, since nothing changed"
-      ]
-    },
-    {
-      "id": 5,
-      "prompt": "Refetch arXiv 2403.05131 and give me a fresh quick read — the paper's been revised since we last looked at it.",
-      "expected_output": "Skips both the discussions cache short-circuit and the papers cache reuse, fetches fresh from the MCP server, regenerates the seven-header summary from the new text, and overwrites both cached files.",
-      "files": [
-        ".prioris/papers/arxiv/2403.05131.md",
-        ".prioris/discussions/arxiv/2403.05131.md"
-      ],
-      "expectations": [
-        "Does not present the existing cached 'Quick read' section as-is, despite one already existing",
-        "Does not reuse .prioris/papers/arxiv/2403.05131.md as-is; calls research_arxiv_fetch_full_text and research_arxiv_parse_full_text fresh",
-        "Overwrites .prioris/papers/arxiv/2403.05131.md with the newly fetched content",
-        "Regenerates the seven-header summary from the newly fetched text and replaces the 'Quick read' section in the discussion note"
+        "Narrows generation to only the methodology section, leaving the other five section notes untouched",
+        "Dispatches document-reader for just the methodology section, not all six",
+        "Calls research_notes_update on the existing section:methodology note's id rather than research_notes_create",
+        "Does not ask the user to disambiguate which note to update, since the section:methodology tag combination is already unique per paper"
       ]
     }
   ]
