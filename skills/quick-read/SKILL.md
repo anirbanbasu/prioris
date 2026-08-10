@@ -2,7 +2,7 @@
 name: quick-read
 description: "Produce six atomic, per-section notes from a named paper's full text — background and research problem, key assumptions, methodology, results and analyses, documented shortcomings, and takeaways and future avenues — each grounded strictly in the paper's own text, never opinion or prior discussion. Triggers: quick read, quick-read, summarize this paper, tl;dr this paper, quick summary of, executive summary of this paper."
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   status: active
   task_type: open-ended
 ---
@@ -31,7 +31,11 @@ Each is its own note, tagged `section:<name>` alongside `<project_tag>` and `ski
 1. **Search/Select** — identical to `discuss`'s Search and Select steps (including the provider-choice `AskUserQuestion` once expanding beyond local matches). **If handed a local file (e.g. via `@file`), skip straight to step 2** with the paper identified by its uploaded `id`.
 2. **Per-section find-or-create** — for each of the six sections, search first: `research_notes_search(provider, canonical_identifier, tags_all=[<project_tag>, "skill:quick-read", "section:<name>"])`. A hit is reused as-is (this tag combination can only ever match zero or one note, so there's nothing to disambiguate) unless the user explicitly asked to redo/regenerate that section — collect the set of sections still missing (or explicitly requested to redo).
 3. **Generate** — if any sections remain missing/requested, dispatch `../../agents/document-reader.md` once with the paper's `(provider, identifier[, format])` and the specific list of section names still needed, per its "One or more sections for `quick-read`" scenario. It returns one grounded Markdown body per requested section.
-4. **Present** — show all six sections (reused plus freshly generated) under the headers above, in the order listed. If a section genuinely doesn't apply (e.g. the paper states no future directions), say so briefly rather than fabricating content.
+4. **Present** — render all six sections (reused plus freshly generated) as clearly separated blocks, never as one contiguous passage:
+   - Open with a single `#`-level title naming the paper: `# Quick Read: <title> (<provider>:<canonical_identifier>)`. Use whatever title is on hand (from the digest, prior fetch, or the section text itself); fall back to the bare identifier if no title is available.
+   - Render each of the six sections as its own `##`-level heading, numbered in the fixed order above (`## 1. Background and Research Problem`, `## 2. Key Assumptions`, … `## 6. Takeaways and Future Avenues`), regardless of the underlying note's own heading text.
+   - Separate every section from the next with a horizontal rule (`---`) on its own line — including between the title and the first section.
+   - If a section genuinely doesn't apply (e.g. the paper states no future directions), keep its heading and horizontal rule and write one brief line saying so, rather than fabricating content or omitting the section.
 5. **Record** — for a section generated because it was missing, `research_notes_create(provider, identifier, format, text=<section body>, tags=[<project_tag>, "skill:quick-read", "section:<name>"])`. For a section regenerated because the user explicitly asked to redo it, `research_notes_update(note_id=<existing section note's id>, text=<new body>)` instead — tags untouched, no disambiguation question, since this tag combination is already known to be unique per paper. Do this automatically for every freshly generated/regenerated section — never ask first.
 6. **Check in on context** — per `../../shared/context-hygiene.md`, if this conversation has been running long, close with a brief, polite nudge to clear context before the next paper.
 
