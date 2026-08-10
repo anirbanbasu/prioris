@@ -29,15 +29,15 @@
     {
       "id": 3,
       "prompt": "Clear out anything in local file storage older than 30 days.",
-      "expected_output": "Converts 'older than 30 days' to an absolute cutoff date using the current date, calls research_list_fetched(provider='localfile') to find candidates, filters client-side by fetched_at, confirms the exact entries before deleting, and after deletion separately offers to clean up matching .prioris/papers/ files while explicitly flagging (and defaulting to keep) any matching .prioris/discussions/ notes.",
+      "expected_output": "Converts 'older than 30 days' to an absolute cutoff date using the current date, calls research_list_fetched(provider='localfile') to find candidates, filters client-side by fetched_at, confirms the exact entries before deleting, then reports what was deleted.",
       "files": [],
       "expectations": [
         "Converts 'older than 30 days' to an absolute date cutoff using the current date before filtering",
         "Restricts research_list_fetched to provider='localfile'",
         "Filters candidates by fetched_at client-side (since research_list_fetched has no date filter of its own) rather than assuming the tool filters by age",
         "Lists the exact (provider, identifier, format) entries about to be removed and gets explicit confirmation before calling research_delete_fetched",
-        "After deleting, offers (rather than silently performing) to remove matching .prioris/papers/localfile/<id>.md files",
-        "If a matching .prioris/discussions/localfile/<id>.md exists, explicitly calls it out and defaults to recommending it be kept rather than deleted"
+        "Does not offer or perform any local-file cleanup, since there is no local paper cache left to clean up",
+        "Does not mention or touch any note"
       ]
     }
   ]
