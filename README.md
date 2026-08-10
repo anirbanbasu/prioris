@@ -2,7 +2,7 @@
 
 [![pytest](https://github.com/anirbanbasu/prioris/actions/workflows/uv-pytest-coverage.yml/badge.svg)](https://github.com/anirbanbasu/prioris/actions/workflows/uv-pytest-coverage.yml)
 
-Search, fetch, and discuss prior art against the ideas you're working on. Deliberately scoped to **literature review and discussion only**; it will _**not**_ draft, outline, or write any part of a manuscript, that you may need to create, for you.
+Prioris is a Claude Code CLI plugin, which you can use to search, fetch, and discuss prior art against the ideas you're working on. Deliberately scoped to **literature review and discussion only**; it will _**not**_ draft, outline, or write any part of a manuscript, that you may need to create, for you.
 
 ## Why
 
