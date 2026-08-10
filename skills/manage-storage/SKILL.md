@@ -9,7 +9,7 @@ metadata:
 
 # Manage Storage
 
-See `../../shared/scope.md` for the plugin-wide tool constraint, `../../shared/storage-management.md` for the `research_list_fetched`/`research_delete_fetched` contracts and — importantly — the distinction between the server's own storage and this plugin's `.prioris/` cache, and `../../shared/data-layout.md` for the `.prioris/` layout referenced in the cleanup step below.
+See `../../shared/scope.md` for the plugin-wide tool constraint, `../../shared/storage-management.md` for the `research_list_fetched`/`research_delete_fetched` contracts and — importantly — the distinction between `StorageBackend` (this skill's target) and `NotesBackend` (the notes store, out of scope here), and `../../shared/data-layout.md` for the `.prioris/` layout this skill does not touch.
 
 ## Scope
 
