@@ -4,56 +4,53 @@
     {
       "id": 1,
       "prompt": "Find me a recent paper on retrieval augmented generation for reducing hallucination in code review comments, and let's discuss it against my idea of using RAG over a project's own commit history to ground review suggestions.",
-      "expected_output": "Searches via research_arxiv_search, presents a short ranked list (provider, title, authors, year, one-line abstract snippet) without fetching full text yet, confirms which single paper to open, then fetches/parses it, discusses it against the user's stated idea, and records a discussion note.",
+      "expected_output": "Asks which provider(s) to search before running any provider search, presents a short ranked list without fetching full text yet, confirms which single paper to open, then delegates fetching to document-reader, discusses it against the user's stated idea, and records a discussion note via research_notes_create/update.",
       "files": [],
       "expectations": [
-        "Uses research_arxiv_search (not a built-in web search tool) to find candidates",
+        "Asks via AskUserQuestion which of arXiv / Europe PMC / both to search before calling any provider search tool",
         "Presents a ranked list of candidates before fetching any full text",
-        "Confirms with the user which single paper to open before calling a fetch tool",
-        "Checks for an existing .prioris/papers/arxiv/<identifier>.md cache before calling research_arxiv_fetch_full_text",
+        "Confirms with the user which single paper to open before dispatching document-reader",
+        "Delegates the initial fetch to the document-reader subagent rather than calling fetch/parse tools directly from the main thread",
         "Discussion explicitly relates the paper's claims, method, or limitations to the user's stated RAG-over-commit-history idea",
-        "Writes or updates .prioris/discussions/arxiv/<identifier>.md after the discussion automatically, without asking the user whether to save it",
+        "Runs the find-or-create note flow (research_notes_search, then create or update) after the discussion automatically, without asking the user whether to save it",
         "Does not draft, outline, or write manuscript prose at any point"
       ]
     },
     {
       "id": 2,
       "prompt": "I have this paper: arXiv 2401.12345v2. Let's talk about whether its evaluation methodology is sound compared to what I'm doing in my thesis on federated learning privacy.",
-      "expected_output": "Skips search/select since the identifier is already given, checks cache first, fetches and parses via the arXiv PDF-preferred path if not cached, and discusses the paper's methodology only in relation to the user's stated thesis topic.",
+      "expected_output": "Skips search/select since the identifier is already given, dispatches document-reader for the initial fetch, and discusses the paper's methodology only in relation to the user's stated thesis topic, dispatching document-reader again for any specific textual detail needed.",
       "files": [],
       "expectations": [
         "Does not perform a search step since a specific identifier was already provided",
-        "Checks .prioris/papers/arxiv/2401.12345v2.md for a cached copy before calling any MCP fetch tool",
-        "If not cached, calls research_arxiv_fetch_full_text with format=pdf before falling back to html",
-        "Loops on has_more when calling research_arxiv_parse_full_text rather than treating the first page as the whole paper",
+        "Dispatches document-reader for the initial Fetch rather than calling research_arxiv_fetch_full_text/parse_full_text directly from the main thread",
         "Discussion of evaluation methodology is grounded only in the paper's actual text, not invented details",
+        "Any specific textual detail needed mid-discussion is obtained via a fresh document-reader dispatch, not by the main thread claiming to already hold the full text",
         "Does not pull any other paper's full text into the discussion"
       ]
     },
     {
       "id": 3,
       "prompt": "Can you help me discuss this Europe PMC paper PMC1234567 about CRISPR off-target effects? I'm building a similar off-target prediction model and want to know how their validation compares to mine.",
-      "expected_output": "Uses the Europe PMC fetch/parse tool pair (XML only), and if full text isn't available, offers to discuss from abstract/metadata only instead of failing silently or substituting a web fetch.",
+      "expected_output": "Dispatches document-reader to fetch via the Europe PMC XML-only pair, and if full text isn't available, offers to discuss from abstract/metadata only instead of failing silently or substituting a web fetch.",
       "files": [],
       "expectations": [
-        "Uses research_europepmc_fetch_full_text and research_europepmc_parse_full_text rather than arXiv tools",
-        "Does not pass a format parameter choice for Europe PMC beyond the fixed xml format",
-        "If fetch fails with format_unavailable, explicitly offers to continue from abstract/metadata only rather than silently stopping",
+        "Dispatches document-reader for the fetch rather than calling research_europepmc_fetch_full_text/parse_full_text from the main thread",
+        "If document-reader reports full text unavailable (format_unavailable), explicitly offers to continue from abstract/metadata only rather than silently stopping",
         "Never substitutes a built-in web search/fetch tool for the prioris-mcp calls"
       ]
     },
     {
       "id": 4,
-      "prompt": "Can you refetch arXiv 2401.12345v2? I think a new version came out and the cached copy might be stale.",
-      "expected_output": "Bypasses the .prioris/papers/arxiv/2401.12345v2.md cache because a refetch was explicitly requested, calls the arXiv fetch/parse tools fresh, and overwrites the cached file.",
-      "files": [
-        ".prioris/papers/arxiv/2401.12345v2.md"
-      ],
+      "prompt": "This paper has three existing discussion notes already (topics: evaluation, related-work, limitations). Add a new point about their ablation study's statistical significance to the discussion.",
+      "expected_output": "Searches for existing skill:discuss notes on this paper, presents the three existing topics plus a start-new option via AskUserQuestion, and updates or creates based on the user's pick rather than guessing which topic the ablation point belongs to.",
+      "files": [],
       "expectations": [
-        "Does not reuse the existing .prioris/papers/arxiv/2401.12345v2.md cache despite it already existing",
-        "Calls research_arxiv_fetch_full_text (format=pdf, retrying html if needed) and research_arxiv_parse_full_text despite the cache hit",
-        "Overwrites .prioris/papers/arxiv/2401.12345v2.md with the freshly fetched content and an updated fetched_at",
-        "Does not treat this as an ordinary redo/regenerate request — it's a fetch-level refresh, not a generation-level one"
+        "Calls research_notes_search scoped to this paper and skill:discuss before deciding where to write",
+        "Presents the existing topics via AskUserQuestion using format_note_choices.py-style deterministic labels rather than an LLM-authored summary",
+        "Includes a start-a-new-topic option alongside the existing ones",
+        "Does not use tag closeness alone to silently pick a topic without asking",
+        "Calls research_notes_update on the picked note (tags untouched) or research_notes_create for a new topic, matching the user's choice"
       ]
     }
   ]
