@@ -1,6 +1,6 @@
 # Shared: Core MCP Tool Contracts
 
-Referenced by `discuss` and `quick-read`. Assumes a companion MCP server (the `prioris-mcp` server, https://pypi.org/project/prioris-mcp/) exposing at minimum:
+Referenced by `discuss`, `quick-read`, `quiz-me`, and `reading-log`. Assumes a companion MCP server (the `prioris-mcp` server, https://pypi.org/project/prioris-mcp/) exposing at minimum:
 
 ## A note on failures
 
@@ -30,7 +30,7 @@ Every tool below fails by raising an opaque `ToolError` with a human-readable me
 - `research_resolve_identifier(identifier, format) -> {identifier, provider, resolved_url, format, full_text_available?}` — resolves an arXiv id, a Europe PMC id/PMCID, or a DOI of unknown provider to its canonical form. Does **not** accept a URL — a bare DOI is resolved via a doi.org redirect (checked against an allowlisted domain before any further request), everything else is self-identifying by pattern with no network round-trip. Standalone utility, not a required first step when the provider is already known. Does not resolve local files — there is nothing to resolve; a local file's identity is its content hash, established only by calling `research_localfile_fetch_full_text` itself.
 
 **Search over fetched content**
-- `research_search_fetched(query, provider?, identifier?, format?) -> {matches: [{provider, identifier, format, snippet, offset, score}]}` — full-text search (FTS5 syntax: plain keywords, phrase quotes, `AND`/`OR`/`NEAR` all work) over content already fetched *and* parsed on the server; never triggers a fetch or parse itself, so it only surfaces papers some caller (this session or another) already pulled in before. Optionally scoped to one `provider`, one `(provider, identifier)` pair (`identifier` requires `provider`), and/or one `format` — `identifier` scopes the search to one document, it doesn't look that document up on its own; `query` is still required. Matches don't carry `title`/`authors` — cross-reference `.prioris/papers/<provider>/<identifier>.md` locally for those where available. See `discuss`'s local-search-first step for how this is used in practice.
+- `research_search_fetched(query, provider?, identifier?, format?) -> {matches: [{provider, identifier, format, snippet, offset, score}]}` — full-text search (FTS5 syntax: plain keywords, phrase quotes, `AND`/`OR`/`NEAR` all work) over content already fetched *and* parsed on the server; never triggers a fetch or parse itself, so it only surfaces papers some caller (this session or another) already pulled in before. Optionally scoped to one `provider`, one `(provider, identifier)` pair (`identifier` requires `provider`), and/or one `format` — `identifier` scopes the search to one document, it doesn't look that document up on its own; `query` is still required. Matches don't carry `title`/`authors` — enrich via `shared/scripts/metadata_cache.py read <provider> <identifier>` where a cache entry exists. See `discuss`'s local-search-first step for how this is used in practice.
 
 **Resources** (read-only; never trigger a fetch or parse — read one that doesn't exist yet and you get a plain not-found, not an error):
 - `research://{provider}/{identifier}/{format}/fulltext` — persisted raw full text, returned whole (not paginated)
