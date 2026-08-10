@@ -1,0 +1,17 @@
+{
+  "description": "Prunes .prioris/.review/schedule.json's entry for a quiz-me question note deleted via research_notes_delete.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__prioris-mcp__research_notes_delete",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/prune_review_schedule.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
