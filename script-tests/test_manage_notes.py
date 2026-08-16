@@ -444,6 +444,56 @@ def test_search_with_vector_and_index_status(
     assert output["index_status"]["vector"] == "ready"
 
 
+def test_search_mode_vector(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Test that search --mode vector returns only vector matches without fts block."""
+
+    def _vector_match(note_id: str, score: float) -> dict:
+        return {
+            "note_id": note_id,
+            "score": score,
+            "text_preview": "vector match text preview",
+        }
+
+    async def fake_call_tool(
+        self: Client, name: str, arguments: dict | None = None, **kwargs: object
+    ) -> object:
+        return SimpleNamespace(
+            structured_content={
+                "fts": None,
+                "vector": {
+                    "matches": [_vector_match("vm1", 0.95)],
+                    "offset": 0,
+                    "limit": 50,
+                    "total": 1,
+                    "has_more": False,
+                },
+                "index_status": {"vector": "ready"},
+            },
+            data=None,
+        )
+
+    monkeypatch.setattr(Client, "call_tool", fake_call_tool)
+
+    args = mn.build_parser().parse_args(["search", "--mode", "vector"])
+    assert anyio.run(mn.cmd_search, args) == 0
+    output = json.loads(capsys.readouterr().out)
+
+    # Assert vector matches are in output
+    assert "vector" in output
+    assert len(output["vector"]["matches"]) == 1
+    assert output["vector"]["matches"][0]["note_id"] == "vm1"
+    assert output["vector"]["total"] == 1
+
+    # Assert fts is NOT in output when mode is vector and fts_notes is empty
+    assert "fts" not in output
+
+    # Assert index_status is present
+    assert "index_status" in output
+    assert output["index_status"]["vector"] == "ready"
+
+
 def test_main_function(capsys: pytest.CaptureFixture) -> None:
     # Test that main() function works correctly
     import sys as sys_module

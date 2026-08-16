@@ -283,9 +283,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--author-filter", choices=["any", "mine", "named"], default="any"
     )
     search_p.add_argument("--author-name", default=None)
-    search_p.add_argument("--tags-all", nargs="+", default=[])
-    search_p.add_argument("--tags-any", nargs="+", default=[])
-    search_p.add_argument("--tags-exclude", nargs="+", default=[])
+    search_p.add_argument("--tags-all", action="extend", nargs="+", default=[])
+    search_p.add_argument("--tags-any", action="extend", nargs="+", default=[])
+    search_p.add_argument("--tags-exclude", action="extend", nargs="+", default=[])
     search_p.add_argument("--mode", choices=["fts", "vector", "hybrid"], default="fts")
     search_p.add_argument("--offset", type=int, default=0)
     search_p.add_argument("--limit", type=int, default=50)
@@ -305,19 +305,23 @@ def build_parser() -> argparse.ArgumentParser:
     create_p.add_argument("--identifier", required=True)
     create_p.add_argument("--format", default=None)
     create_p.add_argument("--text", required=True)
-    create_p.add_argument("--anchor-quote", nargs="+", default=[], dest="anchor_quote")
+    create_p.add_argument(
+        "--anchor-quote", action="extend", nargs="+", default=[], dest="anchor_quote"
+    )
     create_p.add_argument("--author-name", default=None)
-    create_p.add_argument("--tag", nargs="+", default=[], dest="tag")
-    create_p.add_argument("--metadata", nargs="+", default=[])
+    create_p.add_argument("--tag", action="extend", nargs="+", default=[], dest="tag")
+    create_p.add_argument("--metadata", action="extend", nargs="+", default=[])
 
     update_p = sub.add_parser("update")
     update_p.add_argument("note_id")
     update_p.add_argument("--text", default=None)
-    update_p.add_argument("--tag", nargs="+", default=[], dest="tag")
+    update_p.add_argument("--tag", action="extend", nargs="+", default=[], dest="tag")
     update_p.add_argument("--clear-tags", action="store_true")
-    update_p.add_argument("--anchor-quote", nargs="+", default=[], dest="anchor_quote")
+    update_p.add_argument(
+        "--anchor-quote", action="extend", nargs="+", default=[], dest="anchor_quote"
+    )
     update_p.add_argument("--clear-anchors", action="store_true")
-    update_p.add_argument("--metadata", nargs="+", default=[])
+    update_p.add_argument("--metadata", action="extend", nargs="+", default=[])
     update_p.add_argument("--clear-metadata", action="store_true")
 
     delete_p = sub.add_parser("delete")
