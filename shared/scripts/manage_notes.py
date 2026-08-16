@@ -57,7 +57,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import anyio
 import metadata_cache
@@ -123,9 +123,7 @@ async def _run_search(args: argparse.Namespace) -> dict[str, Any]:
                     for m in result.vector.matches
                 )
             if result.index_status is not None:
-                index_status = {
-                    k: cast(Any, v).value for k, v in result.index_status.items()
-                }
+                index_status = dict(result.index_status.items())
 
             has_more = (result.fts.has_more if result.fts is not None else False) or (
                 result.vector.has_more if result.vector is not None else False

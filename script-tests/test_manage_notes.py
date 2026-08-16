@@ -390,6 +390,60 @@ def test_update_with_clear_anchors_and_metadata(capsys: pytest.CaptureFixture) -
     assert updated["metadata"] == {}
 
 
+def test_search_with_vector_and_index_status(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Test that vector matches and index_status are correctly included in output."""
+
+    async def fake_call_tool(
+        self: Client, name: str, arguments: dict | None = None, **kwargs: object
+    ) -> object:
+        return SimpleNamespace(
+            structured_content={
+                "fts": {
+                    "notes": [
+                        _note("n1", "arxiv", "1234.5678", "2026-01-01T00:00:00+00:00")
+                    ],
+                    "offset": 0,
+                    "limit": 50,
+                    "total": 1,
+                    "has_more": False,
+                },
+                "vector": {
+                    "matches": [
+                        {
+                            "note_id": "vm1",
+                            "text_preview": "vector match text preview",
+                            "score": 0.95,
+                        }
+                    ],
+                    "offset": 0,
+                    "limit": 50,
+                    "total": 1,
+                    "has_more": False,
+                },
+                "index_status": {"vector": "ready"},
+            },
+            data=None,
+        )
+
+    monkeypatch.setattr(Client, "call_tool", fake_call_tool)
+
+    args = mn.build_parser().parse_args(["search", "--mode", "hybrid"])
+    assert anyio.run(mn.cmd_search, args) == 0
+    output = json.loads(capsys.readouterr().out)
+
+    # Assert vector matches are in output
+    assert "vector" in output
+    assert len(output["vector"]["matches"]) == 1
+    assert output["vector"]["matches"][0]["note_id"] == "vm1"
+    assert output["vector"]["total"] == 1
+
+    # Assert index_status is in output as a plain dict with string values
+    assert "index_status" in output
+    assert output["index_status"]["vector"] == "ready"
+
+
 def test_main_function(capsys: pytest.CaptureFixture) -> None:
     # Test that main() function works correctly
     import sys as sys_module
