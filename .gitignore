@@ -12,3 +12,4 @@ tmp/
 docs/superpowers/
 coverage.json
 .env
+.worktrees/
