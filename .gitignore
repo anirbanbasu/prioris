@@ -205,3 +205,5 @@ docs/superpowers
 tmp/
 coverage.json
 .prioris/
+.opencode/
+opencode.json
