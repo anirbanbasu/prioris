@@ -7,7 +7,7 @@
       "expected_output": "Asks which provider(s) to search before running any provider search, presents a short ranked list without fetching full text yet, confirms which single paper to open, then delegates fetching to document-reader, discusses it against the user's stated idea, and records a discussion note via research_notes_create/update.",
       "files": [],
       "expectations": [
-        "Asks via AskUserQuestion which of arXiv / Europe PMC / both to search before calling any provider search tool",
+        "Asks via AskUserQuestion which of arXiv / Europe PMC / both / OpenAlex semantic search to use before calling any provider search tool",
         "Presents a ranked list of candidates before fetching any full text",
         "Confirms with the user which single paper to open before dispatching document-reader",
         "Delegates the initial fetch to the document-reader subagent rather than calling fetch/parse tools directly from the main thread",

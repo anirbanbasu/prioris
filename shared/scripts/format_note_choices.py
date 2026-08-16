@@ -10,10 +10,12 @@ Usage:
     uv run --project <plugin root> python shared/scripts/format_note_choices.py [--max N] < notes.json
 
 Reads a JSON array of note objects (id, text, tags at minimum - the shape
-research_notes_search's "notes" field already returns) from stdin. Prints a
-JSON array of {"id": ..., "label": ...} to stdout, capped at --max entries
-(default 4), preserving input order. Exits 1 with a message on stderr if
-stdin isn't valid JSON or isn't a JSON array.
+research_notes_search's fts.notes field returns for mode="fts", the default -
+see mcp-contracts.md#notes for the fts/vector/index_status envelope this must
+be unwrapped from first) from stdin. Prints a JSON array of {"id": ...,
+"label": ...} to stdout, capped at --max entries (default 4), preserving
+input order. Exits 1 with a message on stderr if stdin isn't valid JSON or
+isn't a JSON array.
 """
 
 import argparse
