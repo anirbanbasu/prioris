@@ -35,6 +35,8 @@ def test_cmd_search_passes_arguments_through(
         assert name == "research_arxiv_search"
         assert arguments is not None
         assert arguments["query"] == "quantum trust"
+        assert "sort_by" not in arguments
+        assert "sort_order" not in arguments
         return SimpleNamespace(
             structured_content={"results": [_record("1234.5678")], "total_results": 1},
             data=None,
@@ -43,6 +45,40 @@ def test_cmd_search_passes_arguments_through(
     monkeypatch.setattr(Client, "call_tool", fake_call_tool)
 
     args = ma.build_parser().parse_args(["search", "--query", "quantum trust"])
+    assert anyio.run(ma.cmd_search, args) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["results"][0]["arxiv_id"] == "1234.5678"
+
+
+def test_cmd_search_includes_sort_args_when_set(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    async def fake_call_tool(
+        self: Client, name: str, arguments: dict | None = None, **kwargs: object
+    ) -> object:
+        assert name == "research_arxiv_search"
+        assert arguments is not None
+        assert arguments["query"] == "quantum trust"
+        assert arguments["sort_by"] == "submittedDate"
+        assert arguments["sort_order"] == "ascending"
+        return SimpleNamespace(
+            structured_content={"results": [_record("1234.5678")], "total_results": 1},
+            data=None,
+        )
+
+    monkeypatch.setattr(Client, "call_tool", fake_call_tool)
+
+    args = ma.build_parser().parse_args(
+        [
+            "search",
+            "--query",
+            "quantum trust",
+            "--sort-by",
+            "submittedDate",
+            "--sort-order",
+            "ascending",
+        ]
+    )
     assert anyio.run(ma.cmd_search, args) == 0
     output = json.loads(capsys.readouterr().out)
     assert output["results"][0]["arxiv_id"] == "1234.5678"

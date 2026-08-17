@@ -42,17 +42,20 @@ from prioris_mcp.models.arxiv import (
 
 
 async def cmd_search(args: argparse.Namespace) -> int:
+    arguments: dict[str, object] = {
+        "query": args.query,
+        "max_results": args.max_results,
+        "start": args.start,
+    }
+    if args.sort_by is not None:
+        arguments["sort_by"] = args.sort_by
+    if args.sort_order is not None:
+        arguments["sort_order"] = args.sort_order
     async with client() as c:
         result = await call_tool(
             c,
             "research_arxiv_search",
-            {
-                "query": args.query,
-                "max_results": args.max_results,
-                "start": args.start,
-                "sort_by": args.sort_by,
-                "sort_order": args.sort_order,
-            },
+            arguments,
             ArxivSearchResult,
         )
     print(result.model_dump_json(by_alias=True))
