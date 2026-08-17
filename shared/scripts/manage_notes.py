@@ -28,10 +28,13 @@ Usage:
 
     uv run --project <plugin root> python shared/scripts/manage_notes.py delete NOTE_ID
 
-`search` without `--group-by-paper` prints research_notes_search's own result shape
-({"fts": {...}|omitted, "vector": {...}|omitted, "index_status": {...}|null}), aggregated across
-pages if `--all` is given (loops offset per populated block until has_more is false or
---max-pages, default 20, is hit - a stderr warning notes if the cap was hit before exhaustion).
+`search` without `--group-by-paper` prints a reshaped view of research_notes_search's result
+({"fts": {"notes", "total", "has_more"}|omitted, "vector": {"matches", "total", "has_more"}|
+omitted, "index_status": {...}|null}), aggregated across pages if `--all` is given (loops offset
+per populated block until has_more is false or --max-pages, default 20, is hit - a stderr warning
+notes if the cap was hit before exhaustion). Each block's `has_more` reflects the last page
+fetched for that block, same convention as `next_cursor_mark` in manage_europepmc.py's search
+output.
 
 `search --group-by-paper` requires `--mode fts` (the default) - vector matches carry no
 provider/canonical_identifier to group by, so this exits 1 under vector/hybrid. Prints a JSON
@@ -108,6 +111,8 @@ async def _run_search(args: argparse.Namespace) -> dict[str, Any]:
         fts_notes: list[dict[str, Any]] = []
         vector_matches: list[dict[str, Any]] = []
         index_status: dict[str, Any] | None = None
+        fts_has_more = False
+        vector_has_more = False
         offset = args.offset
         page_count = 0
         while True:
@@ -117,17 +122,17 @@ async def _run_search(args: argparse.Namespace) -> dict[str, Any]:
                 fts_notes.extend(
                     n.model_dump(by_alias=True, mode="json") for n in result.fts.notes
                 )
+                fts_has_more = result.fts.has_more
             if result.vector is not None:
                 vector_matches.extend(
                     m.model_dump(by_alias=True, mode="json")
                     for m in result.vector.matches
                 )
+                vector_has_more = result.vector.has_more
             if result.index_status is not None:
                 index_status = dict(result.index_status.items())
 
-            has_more = (result.fts.has_more if result.fts is not None else False) or (
-                result.vector.has_more if result.vector is not None else False
-            )
+            has_more = fts_has_more or vector_has_more
             if not args.all or not has_more:
                 break
             if page_count >= args.max_pages:
@@ -140,9 +145,17 @@ async def _run_search(args: argparse.Namespace) -> dict[str, Any]:
 
         output: dict[str, Any] = {}
         if fts_notes or args.mode in ("fts", "hybrid"):
-            output["fts"] = {"notes": fts_notes, "total": len(fts_notes)}
+            output["fts"] = {
+                "notes": fts_notes,
+                "total": len(fts_notes),
+                "has_more": fts_has_more,
+            }
         if vector_matches or args.mode in ("vector", "hybrid"):
-            output["vector"] = {"matches": vector_matches, "total": len(vector_matches)}
+            output["vector"] = {
+                "matches": vector_matches,
+                "total": len(vector_matches),
+                "has_more": vector_has_more,
+            }
         output["index_status"] = index_status
         return output
 

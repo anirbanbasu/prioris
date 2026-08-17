@@ -84,6 +84,16 @@ def test_cmd_search_includes_sort_args_when_set(
     assert output["results"][0]["arxiv_id"] == "1234.5678"
 
 
+def test_build_parser_rejects_invalid_sort_by() -> None:
+    with pytest.raises(SystemExit):
+        ma.build_parser().parse_args(["search", "--query", "q", "--sort-by", "JUNK"])
+
+
+def test_build_parser_rejects_invalid_sort_order() -> None:
+    with pytest.raises(SystemExit):
+        ma.build_parser().parse_args(["search", "--query", "q", "--sort-order", "JUNK"])
+
+
 def test_cmd_list_top_n_passes_categories(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:

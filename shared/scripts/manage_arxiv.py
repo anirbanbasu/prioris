@@ -119,8 +119,14 @@ def build_parser() -> argparse.ArgumentParser:
     search_p.add_argument("--query", required=True)
     search_p.add_argument("--max-results", type=int, default=10)
     search_p.add_argument("--start", type=int, default=0)
-    search_p.add_argument("--sort-by", default=None)
-    search_p.add_argument("--sort-order", default=None)
+    search_p.add_argument(
+        "--sort-by",
+        default=None,
+        choices=["relevance", "lastUpdatedDate", "submittedDate"],
+    )
+    search_p.add_argument(
+        "--sort-order", default=None, choices=["ascending", "descending"]
+    )
 
     list_top_n_p = sub.add_parser("list-top-n")
     list_top_n_p.add_argument(

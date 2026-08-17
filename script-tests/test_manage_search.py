@@ -83,6 +83,9 @@ def test_run_aggregates_pages_and_filters_by_min_score(
     identifiers = [m["identifier"] for m in output["fts"]["matches"]]
     assert identifiers == ["a", "c"]
     assert output["index_status"] == {"vector": "ready"}
+    # Last page fetched had has_more False, so the aggregated block should reflect that even
+    # though the first page's has_more was True.
+    assert output["fts"]["has_more"] is False
 
 
 def test_run_attaches_titles_from_cache(
@@ -118,6 +121,7 @@ def test_run_attaches_titles_from_cache(
     assert anyio.run(ms.run, args) == 0
     output = json.loads(capsys.readouterr().out)
     assert output["fts"]["matches"][0]["title"] == "A Paper"
+    assert output["fts"]["has_more"] is False
 
 
 def test_run_stops_at_max_pages(
@@ -147,7 +151,10 @@ def test_run_stops_at_max_pages(
         ["search", "--query", "q", "--all", "--limit", "1", "--max-pages", "2"]
     )
     assert anyio.run(ms.run, args) == 0
-    assert "stopped after 2 pages" in capsys.readouterr().err
+    captured = capsys.readouterr()
+    output = json.loads(captured.out)
+    assert "stopped after 2 pages" in captured.err
+    assert output["fts"]["has_more"] is True
 
 
 def test_run_exits_on_tool_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -192,6 +199,7 @@ def test_run_vector_mode(
     assert "vector" in output
     assert "fts" not in output
     assert len(output["vector"]["matches"]) == 1
+    assert output["vector"]["has_more"] is False
 
 
 def test_run_hybrid_mode(
@@ -230,6 +238,8 @@ def test_run_hybrid_mode(
     assert "vector" in output
     assert len(output["fts"]["matches"]) == 1
     assert len(output["vector"]["matches"]) == 1
+    assert output["fts"]["has_more"] is False
+    assert output["vector"]["has_more"] is False
 
 
 def test_main_entry_point(

@@ -63,6 +63,8 @@ async def run(args: argparse.Namespace) -> int:
         fts_matches: list[dict[str, Any]] = []
         vector_matches: list[dict[str, Any]] = []
         index_status: dict[str, Any] = {}
+        fts_has_more = False
+        vector_has_more = False
         offset = args.offset
         page_count = 0
         while True:
@@ -72,16 +74,16 @@ async def run(args: argparse.Namespace) -> int:
                 fts_matches.extend(
                     m.model_dump(by_alias=True, mode="json") for m in result.fts.matches
                 )
+                fts_has_more = result.fts.has_more
             if result.vector is not None:
                 vector_matches.extend(
                     m.model_dump(by_alias=True, mode="json")
                     for m in result.vector.matches
                 )
+                vector_has_more = result.vector.has_more
             index_status = dict(result.index_status.items())
 
-            has_more = (result.fts.has_more if result.fts is not None else False) or (
-                result.vector.has_more if result.vector is not None else False
-            )
+            has_more = fts_has_more or vector_has_more
             if not args.all or not has_more:
                 break
             if page_count >= args.max_pages:
@@ -103,9 +105,17 @@ async def run(args: argparse.Namespace) -> int:
 
     output: dict[str, Any] = {}
     if args.mode in ("fts", "hybrid"):
-        output["fts"] = {"matches": fts_matches, "total": len(fts_matches)}
+        output["fts"] = {
+            "matches": fts_matches,
+            "total": len(fts_matches),
+            "has_more": fts_has_more,
+        }
     if args.mode in ("vector", "hybrid"):
-        output["vector"] = {"matches": vector_matches, "total": len(vector_matches)}
+        output["vector"] = {
+            "matches": vector_matches,
+            "total": len(vector_matches),
+            "has_more": vector_has_more,
+        }
     output["index_status"] = index_status
     print(json.dumps(output))
     return 0

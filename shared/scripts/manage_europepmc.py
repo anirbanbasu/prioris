@@ -16,9 +16,11 @@ Usage:
         --identifier ID [ID ...]
 
 `search` prints {"results": [...], "hit_count": N, "next_cursor_mark": str|null}. `--all` loops
-`next_cursor_mark` (starting from `--cursor-mark`, default "*") until it comes back null/empty or
---max-pages (default 10) is hit, aggregating `results`; `next_cursor_mark` in the output then
-reflects the last page fetched. `fetch-metadata` prints its tool's own result shape as-is.
+`next_cursor_mark` (starting from `--cursor-mark`, default "*") until it comes back null/empty, or
+unchanged from the mark just sent (Europe PMC is Solr-backed and repeats the same cursorMark once
+exhausted rather than returning null), or --max-pages (default 10) is hit, aggregating `results`;
+`next_cursor_mark` in the output then reflects the last page fetched. `fetch-metadata` prints its
+tool's own result shape as-is.
 """
 
 import argparse
@@ -44,6 +46,7 @@ async def cmd_search(args: argparse.Namespace) -> int:
         page_count = 0
         while True:
             page_count += 1
+            previous_cursor_mark = cursor_mark
             result = await call_tool(
                 c,
                 "research_europepmc_search",
@@ -60,7 +63,7 @@ async def cmd_search(args: argparse.Namespace) -> int:
             hit_count = result.hit_count
             cursor_mark = result.next_cursor_mark
 
-            if not args.all or not cursor_mark:
+            if not args.all or not cursor_mark or cursor_mark == previous_cursor_mark:
                 break
             if page_count >= args.max_pages:
                 print(

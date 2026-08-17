@@ -204,6 +204,9 @@ def test_search_all_loops_until_has_more_false(
     assert anyio.run(mn.cmd_search, args) == 0
     output = json.loads(capsys.readouterr().out)
     assert [n["id"] for n in output["fts"]["notes"]] == ["n1", "n2"]
+    # Last page fetched had has_more False, so the aggregated block should reflect that even
+    # though the first page's has_more was True.
+    assert output["fts"]["has_more"] is False
 
 
 def test_search_all_stops_at_max_pages(
@@ -235,7 +238,10 @@ def test_search_all_stops_at_max_pages(
         ["search", "--all", "--limit", "1", "--max-pages", "2"]
     )
     assert anyio.run(mn.cmd_search, args) == 0
-    assert "stopped after 2 pages" in capsys.readouterr().err
+    captured = capsys.readouterr()
+    output = json.loads(captured.out)
+    assert "stopped after 2 pages" in captured.err
+    assert output["fts"]["has_more"] is True
 
 
 def test_create_exits_on_tool_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -282,6 +288,7 @@ def test_search_without_group_by_paper(
     assert anyio.run(mn.cmd_search, args) == 0
     output = json.loads(capsys.readouterr().out)
     assert output["fts"]["notes"][0]["id"] == "n1"
+    assert output["fts"]["has_more"] is False
 
 
 def test_search_all_with_no_pagination(
@@ -438,6 +445,7 @@ def test_search_with_vector_and_index_status(
     assert len(output["vector"]["matches"]) == 1
     assert output["vector"]["matches"][0]["note_id"] == "vm1"
     assert output["vector"]["total"] == 1
+    assert output["vector"]["has_more"] is False
 
     # Assert index_status is in output as a plain dict with string values
     assert "index_status" in output
