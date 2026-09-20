@@ -6,8 +6,7 @@ import anyio
 import pytest
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
-from mcp.shared.exceptions import McpError
-from mcp.types import ErrorData
+from mcp.shared.exceptions import MCPError
 from pydantic import BaseModel
 
 
@@ -104,7 +103,7 @@ def test_read_resource_exits_on_mcp_error(monkeypatch: pytest.MonkeyPatch) -> No
     async def fake_read_resource(
         self: Client, uri: str, **kwargs: object
     ) -> list[object]:
-        raise McpError(ErrorData(code=-1, message="not found"))
+        raise MCPError(code=-1, message="not found")
 
     monkeypatch.setattr(Client, "read_resource", fake_read_resource)
 

@@ -3,7 +3,7 @@
 Every manage_*.py script needs the same three things: prioris_mcp's RichHandler logging
 suppressed before import (see below), a Client against the same in-process
 prioris_mcp.server.app() instance .mcp.json launches, and a validate-or-exit wrapper around
-call_tool/read_resource so a real ToolError/McpError/ValidationError becomes a one-line stderr
+call_tool/read_resource so a real ToolError/MCPError/ValidationError becomes a one-line stderr
 message and a non-zero exit code - exactly like pdf_chunk_upload_helper.py's own upload() already
 does by hand. Factored out here so every manage_*.py script doesn't duplicate this ~15 lines.
 
@@ -24,7 +24,7 @@ os.environ.setdefault("PRIORIS_MCP_LOG_LEVEL", "WARNING")
 
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
-from mcp.shared.exceptions import McpError
+from mcp.shared.exceptions import MCPError
 from mcp.types import TextResourceContents
 from prioris_mcp.server import app
 from pydantic import BaseModel, ValidationError
@@ -82,7 +82,7 @@ async def read_resource[ModelT: BaseModel](
     """Read `uri`'s one text block, parse it as JSON, and validate against `model`, or exit(1)."""
     try:
         contents = await active_client.read_resource(uri)
-    except McpError as exc:
+    except MCPError as exc:
         sys.exit(str(exc))
     try:
         payload = json.loads(cast(TextResourceContents, contents[0]).text)

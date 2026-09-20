@@ -6,7 +6,7 @@ requires-python = ">=3.13"
 dependencies = [
     "prioris-mcp",
     "pyyaml>=6.0",
-    "fastmcp>=3.4.5",
+    "fastmcp>=4.0.5",
 ]
 
 [tool.uv]
