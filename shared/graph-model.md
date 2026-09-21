@@ -12,11 +12,11 @@ A document `Pointer`'s `ref_id` is always `f"{provider}:{canonical_identifier}"`
 
 ## Idempotency: `upsert_pointer` is safe to repeat, edges are not
 
-`upsert_pointer` is unique on `(ref_type, ref_id)` and always safe to call again. `create_edge` is **not** deduplicated by the engine — there is no `(from, to, relation_type)` uniqueness; the graph is a true multigraph, and calling `create_edge` twice for "the same" relationship creates two edges. **Every call site that writes an edge must check for an existing one first** — `neighbors(from_id, relation_type=<R>, direction="out")`, paginated, looking for the intended `to_id` — before calling `create_edge`. `shared/scripts/graph_structural_sync.py`'s `link` subcommand implements this check once; reuse it via `Bash` rather than reimplementing the check inline in a skill.
+`upsert_pointer` is unique on `(ref_type, ref_id)` and always safe to call again. `create_edge` is **not** deduplicated by the engine — there is no `(from, to, relation_type)` uniqueness; the graph is a true multigraph, and calling `create_edge` twice for "the same" relationship creates two edges. **Every call site that writes an edge must check for an existing one first** — `neighbors(node_id=<the "from" node>, relation_type=<R>, direction="out")`, paginated, looking for the intended `to_id` — before calling `create_edge`. `shared/scripts/graph_structural_sync.py`'s `link` subcommand implements this check once; reuse it via `Bash` rather than reimplementing the check inline in a skill.
 
 ## Fixed `relation_type` vocabulary
 
-Unlike concepts (`find_concepts`/`list_concepts`), the server has **no vocabulary-browsing aid for relation types** (an explicitly deferred follow-up per the backend's own ADR-00034) — vocabulary drift has to be prevented here, by convention, not by querying the server. Every skill/script in this plugin writing an edge uses one of these, verbatim:
+Unlike concepts (`find_concepts`/`research://graph/concepts`), the server has **no vocabulary-browsing aid for relation types** (an explicitly deferred follow-up per the backend's own ADR-00034) — vocabulary drift has to be prevented here, by convention, not by querying the server. Every skill/script in this plugin writing an edge uses one of these, verbatim:
 
 - `annotates` — `note → document` (or `note → chunk`, once chunk pointers exist). Written only by `graph_structural_sync.py`.
 - `references` — `document → document`, when one document's note text names another already-`Pointer`-linked document. Written only by `graph-extract` (requires reading the note's text — see its SKILL.md).
