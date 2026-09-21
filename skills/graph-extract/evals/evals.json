@@ -47,7 +47,8 @@
         "Does not present a raw ToolError/metadata_conflict message to the user unhandled",
         "Names the specific conflicting metadata key(s) and both candidate values when asking how to resolve",
         "Re-issues the write with the user's chosen resolution rather than abandoning the write silently",
-        "Only proceeds to the next concept/edge after this one is resolved, not in parallel"
+        "Only proceeds to the next concept/edge after this one is resolved, not in parallel",
+        "Checks neighbors() for an existing edge with the same relation_type/to_id before calling create_edge for any approved relation, skipping the create_edge call if one already exists from the earlier extraction"
       ]
     }
   ]

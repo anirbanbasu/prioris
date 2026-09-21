@@ -9,7 +9,7 @@ metadata:
 
 # Graph Extract
 
-See `../../shared/scope.md`, `../../shared/mcp-contracts.md#graph`, and `../../shared/graph-model.md` (the find-or-create pattern, relation_type vocabulary, approval gate, and `MetadataConflictError` handling this skill follows throughout) — read `graph-model.md` in full before running this skill for the first time in a session.
+See `../../shared/scope.md`, `../../shared/mcp-contracts.md#graph`, and `../../shared/graph-model.md` (the find-or-create pattern, relation_type vocabulary, approval gate, edge idempotency rule, and `MetadataConflictError` handling this skill follows throughout) — read `graph-model.md` in full before running this skill for the first time in a session.
 
 ## Scope
 
@@ -24,7 +24,7 @@ Extracts `Concept` nodes and relations from a document's full text (via `../../a
    - Round 1: which candidates to keep (from step 3's outcome per concept).
    - Round 2: for each kept concept, its `label`/`aliases`/`description` and any extra `metadata` (provenance, confidence, source) — pre-filled with the extraction's proposal, editable.
    - Round 3: for each proposed edge, its `relation_type` (default `about`, or `references` for a Pointer-to-Pointer candidate from step 2 — offer the `graph-model.md` vocabulary as options, plus "something else" if truly novel, which then must be added to `graph-model.md` as part of this change) and optional `weight`/`metadata`.
-5. **Write** — one `research_graph_write` call per approved concept/edge (`create_concept`/`update_concept` for the alias-onto-existing case, then `create_edge` for each relation using the resolved concept node id and the source item's `Pointer` node id, resolved via `research_graph_write(op="upsert_pointer", ref_type="document", ref_id="<provider>:<identifier>")` if not already known). If any write raises `metadata_conflict`, follow `graph-model.md`'s conflict-handling steps (surface the key(s), ask keep/use-new/merge, re-issue) rather than letting the error reach the user raw.
+5. **Write** — one `research_graph_write` call per approved concept/edge (`create_concept`/`update_concept` for the alias-onto-existing case, then `create_edge` for each relation using the resolved concept node id and the source item's `Pointer` node id, resolved via `research_graph_write(op="upsert_pointer", ref_type="document", ref_id="<provider>:<identifier>")` for a document source or `research_graph_write(op="upsert_pointer", ref_type="note", ref_id="<note id>")` for a note source, if not already known). Before each `create_edge`, follow `graph-model.md`'s idempotency rule: check `research_graph_query(op="neighbors", node_id=<from_id>, relation_type=<the resolved relation_type>, direction="out")`, paginated, for an existing edge to the same `to_id` — skip the `create_edge` call (report it as already present) if one exists. If any write raises `metadata_conflict`, follow `graph-model.md`'s conflict-handling steps (surface the key(s), ask keep/use-new/merge, re-issue) rather than letting the error reach the user raw.
 6. **Report** — list what was actually written (node/edge ids from each `GraphWriteResult`), distinct from what was proposed but declined in step 4.
 
 No automatic trigger exists for this skill — including for note-sourced extraction — because every write needs LLM judgment and human approval, neither of which a hook can provide. A note written long after its document's fetch links up identically to one written immediately after: the user (re-)invokes this skill on that note directly, whenever that happens to be.
