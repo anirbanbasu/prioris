@@ -18,7 +18,7 @@ Purely mechanical — this skill never extracts concepts or relations from text,
 ## Workflow
 
 1. **Scope the backfill** — ask (or take from `$ARGUMENTS`) whether to backfill documents, notes, or both, and whether to scope to this project (via `project_tag.py`) or every fetched/noted item on the server.
-2. **Documents** — call `research_list_fetched(provider=None, format=None)`, grouped by `(provider, identifier)` (same grouping `manage-storage`'s List step already uses). For each distinct `(provider, identifier)`:
+2. **Documents** — call `research_list_fetched(provider=None, format=None)`, paginating until `has_more` is false, grouped by `(provider, identifier)` (same grouping `manage-storage`'s List step already uses). For each distinct `(provider, identifier)`:
    ```
    uv run --project <plugin root> python ../../shared/scripts/graph_structural_sync.py upsert \
        --ref-type document --ref-id "<provider>:<identifier>"
