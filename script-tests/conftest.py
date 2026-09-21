@@ -20,6 +20,8 @@ _TEST_NOTES_DIR = tempfile.mkdtemp(prefix="prioris-mcp-script-tests-notes-")
 os.environ["PRIORIS_MCP_NOTES_DIR"] = _TEST_NOTES_DIR
 _TEST_VECTOR_DIR = tempfile.mkdtemp(prefix="prioris-mcp-script-tests-vectors-")
 os.environ["PRIORIS_MCP_VECTOR_DIR"] = _TEST_VECTOR_DIR
+_TEST_GRAPH_DIR = tempfile.mkdtemp(prefix="prioris-mcp-script-tests-graph-")
+os.environ["PRIORIS_MCP_GRAPH_DIR"] = _TEST_GRAPH_DIR
 os.environ.setdefault("PRIORIS_MCP_LOG_LEVEL", "WARNING")
 
 
@@ -27,6 +29,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     shutil.rmtree(_TEST_STORAGE_DIR, ignore_errors=True)
     shutil.rmtree(_TEST_NOTES_DIR, ignore_errors=True)
     shutil.rmtree(_TEST_VECTOR_DIR, ignore_errors=True)
+    shutil.rmtree(_TEST_GRAPH_DIR, ignore_errors=True)
 
 
 @pytest.fixture
