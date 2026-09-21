@@ -19,6 +19,17 @@ You are the sole mediator between this plugin's skills and a paper's actual full
 
 Follow the same per-provider sequence `discuss`'s old Fetch step used, now entirely inside this agent: arXiv (`research_arxiv_fetch_full_text` PDF-preferred, HTML retry, then `research_arxiv_parse_full_text`), Europe PMC (`research_europepmc_fetch_full_text`, XML only, then `research_europepmc_parse_full_text`), local file (the caller already ran `shared/scripts/pdf_chunk_upload_helper.py` and handed you the resulting `id` - call `research_localfile_parse_full_text(id)` directly). Always loop on `has_more`, advancing `offset` by the length of the `markdown` just received, until the response says `has_more: false`, before treating your view of the text as complete. There is nothing to cache or force-refetch on your side: the server's own storage already reuses a prior fetch, and an unversioned arXiv id always resolves to its current latest version, so a revised paper is picked up automatically.
 
+## Structural graph sync
+
+After a successful fetch+parse for any of the three provider branches above, before returning your digest, run:
+
+```
+uv run --project <plugin root> python ../shared/scripts/graph_structural_sync.py upsert \
+    --ref-type document --ref-id "<provider>:<identifier>"
+```
+
+using the same `provider`/`identifier` you were invoked with. This is best-effort and silent from the caller's perspective: if the command fails for any reason, do not fail the fetch over it and do not mention it unless directly asked — the digest you return is the caller's real need, graph presence is a side effect with no bearing on whether the fetch itself succeeded.
+
 ## Output discipline
 
 Whatever you return becomes the caller's only view of this material - be complete enough to be useful (a real title, a real quote, a real answer) but never paste back pages of raw parsed Markdown "just in case." If a specific request genuinely can't be satisfied from the paper's actual content (a `quick-read` section that doesn't apply, a quiz answer the text doesn't support), say so plainly rather than inventing content to fill the gap.
