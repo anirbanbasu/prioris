@@ -1,5 +1,5 @@
 {
-  "description": "Prunes .prioris/.review/schedule.json's entry for a quiz-me question note deleted via research_notes_delete.",
+  "description": "Prunes .prioris/.review/schedule.json's entry for a quiz-me question note deleted via research_notes_delete, and links a note into the graph as a Pointer on create/update.",
   "hooks": {
     "PostToolUse": [
       {
@@ -9,6 +9,26 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/prune_review_schedule.sh",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__prioris-mcp__research_notes_create",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/sync_note_pointer.sh",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__prioris-mcp__research_notes_update",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/sync_note_pointer.sh",
+            "timeout": 15
           }
         ]
       }
