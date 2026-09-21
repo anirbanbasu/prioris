@@ -62,3 +62,75 @@ def test_try_claim_recovers_a_stale_placeholder(tmp_path, monkeypatch):
 
 def test_remove_lock_missing_file_is_a_noop(tmp_path):
     lifecycle.remove_lock(tmp_path / "missing.lock")
+
+
+import contextlib
+import threading
+
+import pytest
+
+
+def _isolate_data_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    for var, sub in (
+        ("PRIORIS_MCP_STORAGE_DIR", "storage"),
+        ("PRIORIS_MCP_NOTES_DIR", "notes"),
+        ("PRIORIS_MCP_VECTOR_DIR", "vectors"),
+        ("PRIORIS_MCP_GRAPH_DIR", "graph"),
+    ):
+        monkeypatch.setenv(var, str(tmp_path / sub))
+
+
+def _kill(pid: int | None) -> None:
+    if pid is None:
+        return
+    with contextlib.suppress(ProcessLookupError):
+        os.kill(pid, 15)
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and lifecycle._pid_alive(pid):
+        time.sleep(0.1)
+
+
+def test_connect_or_spawn_spawns_when_no_lock_present(tmp_path, monkeypatch):
+    _isolate_data_dirs(monkeypatch, tmp_path)
+    lock_file = tmp_path / "mcp-server.lock"
+    try:
+        host, port = lifecycle.connect_or_spawn(lock_file=lock_file)
+        assert host == lifecycle.HOST
+        entry = lifecycle.read_lock(lock_file)
+        assert entry is not None
+        assert entry["port"] == port
+    finally:
+        entry = lifecycle.read_lock(lock_file)
+        _kill(entry["pid"] if entry else None)
+
+
+def test_connect_or_spawn_reuses_live_server_without_spawning_twice(
+    tmp_path, monkeypatch
+):
+    _isolate_data_dirs(monkeypatch, tmp_path)
+    lock_file = tmp_path / "mcp-server.lock"
+    try:
+        first = lifecycle.connect_or_spawn(lock_file=lock_file)
+        second = lifecycle.connect_or_spawn(lock_file=lock_file)
+        assert first == second
+    finally:
+        entry = lifecycle.read_lock(lock_file)
+        _kill(entry["pid"] if entry else None)
+
+
+def test_connect_or_spawn_waits_on_an_in_flight_claim_instead_of_spawning(
+    tmp_path, monkeypatch
+):
+    _isolate_data_dirs(monkeypatch, tmp_path)
+    lock_file = tmp_path / "mcp-server.lock"
+    assert (
+        lifecycle._try_claim(lock_file) is True
+    )  # simulate another process already spawning
+    threading.Thread(target=lambda: lifecycle._spawn_server(lock_file)).start()
+    try:
+        host, port = lifecycle.connect_or_spawn(lock_file=lock_file, timeout=15)
+        assert host == lifecycle.HOST
+        assert isinstance(port, int)
+    finally:
+        entry = lifecycle.read_lock(lock_file)
+        _kill(entry["pid"] if entry else None)

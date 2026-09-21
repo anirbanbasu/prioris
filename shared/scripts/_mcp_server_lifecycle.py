@@ -141,3 +141,34 @@ def _spawn_server(lock_file: Path) -> None:
             stdin=subprocess.DEVNULL,
             start_new_session=True,
         )
+
+
+def _wait_for_live_lock(lock_file: Path, timeout: float) -> tuple[str, int]:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        entry = read_lock(lock_file)
+        if entry is not None and is_live(entry):
+            port = entry["port"]
+            assert port is not None
+            return HOST, port
+        time.sleep(_POLL_INTERVAL_SECONDS)
+    raise RuntimeError(
+        f"prioris-mcp canonical server did not become ready within {timeout}s "
+        f"(see {log_path(lock_file)})"
+    )
+
+
+def connect_or_spawn(
+    *, timeout: float = 20.0, lock_file: Path | None = None
+) -> tuple[str, int]:
+    """The (host, port) of the one canonical prioris-mcp HTTP server, spawning it first (as a
+    detached background process) if nothing is currently alive at lock_file."""
+    lock_file = lock_file or default_lock_path()
+    entry = read_lock(lock_file)
+    if entry is not None and is_live(entry):
+        port = entry["port"]
+        assert port is not None
+        return HOST, port
+    if _try_claim(lock_file):
+        _spawn_server(lock_file)
+    return _wait_for_live_lock(lock_file, timeout)
