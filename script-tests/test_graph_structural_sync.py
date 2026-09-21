@@ -132,11 +132,11 @@ def test_find_existing_edge_paginates_past_first_page(
 ) -> None:
     monkeypatch.setattr(gss, "_NEIGHBORS_PAGE_SIZE", 2)
 
-    async def run() -> str | None:
+    async def run() -> tuple[list[str | None], str | None]:
         async with client() as c:
             from_id = await gss._upsert(c, "note", "note-page-test", None)
-            last_to_id = ""
-            for i in range(3):
+            to_ids = []
+            for i in range(4):
                 to_id = await gss._upsert(c, "document", f"arxiv:page-test-{i}", None)
                 await call_tool(
                     c,
@@ -149,11 +149,22 @@ def test_find_existing_edge_paginates_past_first_page(
                     },
                     GraphWriteResult,
                 )
-                last_to_id = to_id
-            return await gss._find_existing_edge(c, from_id, last_to_id, "annotates")
+                to_ids.append(to_id)
+            found = [
+                await gss._find_existing_edge(c, from_id, to_id, "annotates")
+                for to_id in to_ids
+            ]
+            # No match anywhere: forces every page to be walked to exhaustion, whatever
+            # order the backend returns them in - the `found` list above cannot be relied
+            # on to land on a later page, since neighbors' ordering is not specified.
+            missing = await gss._find_existing_edge(
+                c, from_id, "no-such-node", "annotates"
+            )
+            return found, missing
 
-    found_edge_id = anyio.run(run)
-    assert found_edge_id is not None
+    found_edge_ids, missing_edge_id = anyio.run(run)
+    assert all(edge_id is not None for edge_id in found_edge_ids)
+    assert missing_edge_id is None
 
 
 def test_link_exits_on_tool_error(monkeypatch: pytest.MonkeyPatch) -> None:

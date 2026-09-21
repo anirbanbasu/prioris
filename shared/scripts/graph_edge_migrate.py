@@ -19,8 +19,18 @@ if --delete-old is given, deletes OLD (cascading away the original edges). Witho
 OLD is left in place with duplicate edges now also on NEW - useful for a dry-run-then-confirm
 flow where the caller wants to see the migration's effect before committing to the delete.
 
-Prints {"from_node_id", "to_node_id", "migrated_edge_ids": [...], "deleted_old": bool}. Exits 1
-on any prioris-mcp failure via _mcp_client.call_tool.
+Two edges are deliberately not recreated. An edge whose two endpoints both rewrite to NEW (i.e.
+OLD and NEW already shared a direct edge) would become a self-loop, so it is skipped and
+reported under "self_loop_skipped_edge_ids". An edge whose rewritten (from, to, relation_type)
+already exists on the graph would be a duplicate - create_edge is NOT deduplicated by the engine
+(see ../graph-model.md's idempotency rule), and the common merge case produces exactly this: a
+document with an `about` edge to both OLD and NEW - so it is skipped and reported under
+"already_present_edge_ids". Both lists carry the *original* edge ids; "migrated_edge_ids" carries
+the newly created ones, as before.
+
+Prints {"from_node_id", "to_node_id", "migrated_edge_ids": [...], "already_present_edge_ids":
+[...], "self_loop_skipped_edge_ids": [...], "deleted_old": bool}. Exits 1 on any prioris-mcp
+failure via _mcp_client.call_tool.
 """
 
 import argparse
@@ -52,6 +62,7 @@ async def _collect_incident_edges(c: Any, node_id: str) -> list[dict]:
         )
         for hop in page.matches:
             edges[hop.edge.id] = {
+                "id": hop.edge.id,
                 "from_id": hop.edge.from_id,
                 "to_id": hop.edge.to_id,
                 "relation_type": hop.edge.relation_type,
@@ -64,10 +75,44 @@ async def _collect_incident_edges(c: Any, node_id: str) -> list[dict]:
     return list(edges.values())
 
 
+async def _find_existing_edge(
+    c: Any, from_id: str, to_id: str, relation_type: str
+) -> str | None:
+    """The id of an existing `from_id -[relation_type]-> to_id` edge, or None.
+
+    Duplicated from graph_structural_sync.py's identical helper rather than imported: the two
+    scripts are independently runnable CLIs, and the plan's own Self-Review accepted duplicating
+    this paginated-neighbors pattern between them.
+    """
+    offset = 0
+    while True:
+        page = await call_tool(
+            c,
+            "research_graph_query",
+            {
+                "op": "neighbors",
+                "node_id": from_id,
+                "direction": "out",
+                "relation_type": relation_type,
+                "offset": offset,
+                "limit": _NEIGHBORS_PAGE_SIZE,
+            },
+            NeighborsResult,
+        )
+        for hop in page.matches:
+            if hop.node.id == to_id:
+                return hop.edge.id
+        if len(page.matches) < _NEIGHBORS_PAGE_SIZE:
+            return None
+        offset += _NEIGHBORS_PAGE_SIZE
+
+
 async def cmd_migrate(args: argparse.Namespace) -> int:
     async with client() as c:
         incident = await _collect_incident_edges(c, args.from_node_id)
         migrated_ids: list[str] = []
+        already_present_ids: list[str] = []
+        self_loop_skipped_ids: list[str] = []
         for edge in incident:
             new_from = (
                 args.to_node_id
@@ -77,6 +122,15 @@ async def cmd_migrate(args: argparse.Namespace) -> int:
             new_to = (
                 args.to_node_id if edge["to_id"] == args.from_node_id else edge["to_id"]
             )
+            if new_from == new_to:
+                self_loop_skipped_ids.append(edge["id"])
+                continue
+            if (
+                await _find_existing_edge(c, new_from, new_to, edge["relation_type"])
+                is not None
+            ):
+                already_present_ids.append(edge["id"])
+                continue
             result = await call_tool(
                 c,
                 "research_graph_write",
@@ -108,6 +162,8 @@ async def cmd_migrate(args: argparse.Namespace) -> int:
                 "from_node_id": args.from_node_id,
                 "to_node_id": args.to_node_id,
                 "migrated_edge_ids": migrated_ids,
+                "already_present_edge_ids": already_present_ids,
+                "self_loop_skipped_edge_ids": self_loop_skipped_ids,
                 "deleted_old": deleted_old,
             }
         )
