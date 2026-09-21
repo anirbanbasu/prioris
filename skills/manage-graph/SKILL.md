@@ -22,19 +22,20 @@ Manual/direct graph administration — the `manage-notes`/`manage-storage` count
 3. **Edit** — `update_concept`/`update_edge` with only the changed fields; confirm the diff (old value → new value per field) before writing. Handle `metadata_conflict` per `graph-model.md`.
 4. **Delete** — show the exact node/edge (and, for a node, how many incident edges `delete_node`'s cascade will also remove — `neighbors(node_id, direction="both")`, count the matches) before confirming. One `AskUserQuestion` confirmation naming the count, then `delete_node`/`delete_edge`.
 5. **Merge concept A into B** — confirm both concepts (A being absorbed, B surviving) and that every one of A's edges will be recreated on B first. Then:
-   1. `update_concept(B, aliases=[...B.aliases, A.label])` (skip if `A.label` is already in `B.aliases`).
+   1. `update_concept(B, aliases=[...B.aliases, A.label])` (skip if `A.label` is already in `B.aliases`). Also merge A's `description` (if B has none, take A's; if both have one, ask which to keep) and A's `metadata` into B via the same `update_concept` call (or a second one) — `--delete-old` destroys both otherwise. Follow `graph-model.md`'s `MetadataConflictError` handling for any conflicting key: surface the key(s) and both values, ask keep/use-new/merge, re-issue.
    2. ```
       uv run --project <plugin root> python ../../shared/scripts/graph_edge_migrate.py migrate \
           --from-node-id <A> --to-node-id <B> --delete-old
       ```
-   3. Report the migrated edge count and confirm A no longer exists.
-6. **Promote a stub Concept to a Pointer** — triggered either by the user directly, or by `agents/document-reader.md` surfacing a `metadata.stub_identifier` match after a fetch (see `graph-model.md`). Confirm the stub concept and the real `Pointer` it's being promoted to, and how many edges will move. Then:
-   1. `research_graph_write(op="upsert_pointer", ref_type="document", ref_id=<the now-fetched document's ref_id>)` to get the real `Pointer` node id (idempotent — `agents/document-reader.md`'s own fetch-time upsert has usually already created it).
-   2. ```
+   3. Report the migrated edge count (and any edges the script reports as `already_present_edge_ids`/`self_loop_skipped_edge_ids` rather than migrated — B already held an equivalent edge, or A and B were directly linked) and confirm A no longer exists.
+6. **Promote a stub Concept to a Pointer** — triggered either by the user directly (e.g. "promote the stub for arxiv:2401.12345"), or after the user has fetched a paper that was earlier surfaced as an `rmotd` digest item. There is no automatic fetch-time detection (see `graph-model.md`'s stub-concept convention); this step is always invoked deliberately. Confirm the stub concept and the real `Pointer` it's being promoted to, and how many edges will move. Then:
+   1. **Resolve the stub by title, verify by identifier.** Resolve the fetched document's title (from the fetch digest, or ask the user) and its `ref_id` (`<provider>:<canonical_identifier>`). `find_concepts(query=<title>)` for candidates, then check each candidate's `metadata.stub_identifier` (already present on the `ConceptMatch.node` — no separate lookup needed) against the expected `<provider>:<canonical_identifier>` (or the fallback formats from `rmotd`'s Graph stub step, if the item was never fetchable through this plugin) to confirm which candidate, if any, is the right stub. Never promote on a label match alone — the `metadata.stub_identifier` match is what confirms it's the *same* paper, not just a similarly-titled one. `metadata.stub_identifier` cannot be queried directly: `find_concepts`/`research://graph/concepts` only match `label`/`aliases`.
+   2. `research_graph_write(op="upsert_pointer", ref_type="document", ref_id=<the now-fetched document's ref_id>, metadata={"title": <the stub's label>, "promoted_from_stub": <the stub's node id>})` to get the real `Pointer` node id (idempotent — `agents/document-reader.md`'s own fetch-time upsert has usually already created it). The `metadata` argument is what carries the stub's content forward: a bare `Pointer` has no human-readable label of its own (`graph_export.py` renders it as `document:arxiv:2401.12345`), so the paper title the stub held would otherwise be destroyed by `--delete-old`. Carry the stub's `description` across too, if it has one. Handle `metadata_conflict` per `graph-model.md`.
+   3. ```
       uv run --project <plugin root> python ../../shared/scripts/graph_edge_migrate.py migrate \
           --from-node-id <stub concept id> --to-node-id <pointer id> --delete-old
       ```
-   3. Report the migrated edge count and confirm the stub no longer exists.
+   4. Report the migrated edge count (and any edges the script reports as `already_present_edge_ids`/`self_loop_skipped_edge_ids` rather than migrated) and confirm the stub no longer exists.
 
 ## Argument handling
 

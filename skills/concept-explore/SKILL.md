@@ -13,7 +13,7 @@ See `../../shared/scope.md`, `../../shared/mcp-contracts.md#graph`, and `../../s
 
 ## Scope
 
-Read-only — never writes to the graph (a `predict_links` suggestion is presented as something to formalize via `graph-extract`/`manage-graph`, never written here directly). Every `research_graph_analyze` op is seed-bounded (explicit `node_ids`, or a `from_id`/`to_id` pair for `paths`) — there is no whole-graph algorithm call in the underlying API, so Scope (step 1 below) always resolves to a concrete seed set or routes to the export script instead.
+Read-only in practice, with one narrow exception: seed resolution (Step 1) may call `upsert_pointer` as an idempotent, metadata-free node-id lookup for a document that has a note but was never synced to the graph — this can materialize a `Pointer` as a side effect, same as `graph-backfill` would eventually create for that item, just earlier and without a batch-run context. No `Concept`/edge write of any kind happens here: a `predict_links` suggestion is presented as something to formalize via `graph-extract`/`manage-graph`, never written here directly. Every `research_graph_analyze` op is seed-bounded (explicit `node_ids`, or a `from_id`/`to_id` pair for `paths`) — there is no whole-graph algorithm call in the underlying API, so Scope (step 1 below) always resolves to a concrete seed set or routes to the export script instead.
 
 ## Workflow
 
