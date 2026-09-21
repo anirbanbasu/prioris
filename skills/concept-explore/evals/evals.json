@@ -1,0 +1,41 @@
+{
+  "skill_name": "concept-explore",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What's central in my research?",
+      "expected_output": "Defaults the scope question toward 'this project', resolves seeds via research_notes_search plus upsert_pointer lookups (no metadata argument), then runs betweenness_centrality or pagerank over that seed set and presents results by node label.",
+      "files": [],
+      "expectations": [
+        "Asks the Step 1 scope question, offering 'this project' as the recommended default",
+        "Resolves seeds via research_notes_search(tags_all=[project_tag]) followed by upsert_pointer per item, not by trying to pass every node in the corpus",
+        "Calls upsert_pointer with no metadata argument during seed resolution",
+        "Presents results using concept labels or ref_type:ref_id, not bare node ids"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Find a path between attention mechanisms and retrieval-augmented generation.",
+      "expected_output": "Resolves both concept names to node ids via find_concepts, then calls research_graph_analyze op=paths with from_id/to_id/max_depth, presenting each returned path as a labeled hop sequence.",
+      "files": [],
+      "expectations": [
+        "Calls find_concepts for both concept names before running the paths op",
+        "Uses op=paths with from_id and to_id, not betweenness_centrality or another algorithm",
+        "Asks or defaults max_depth reasonably rather than omitting it (max_depth is required for paths)",
+        "Presents every returned path, not just the first, since paths returns multiple simple paths by design"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Show me the whole graph.",
+      "expected_output": "Flags the whole-graph scope as expensive/rare, asks whether the user wants a raw export or a rendered visualization, then runs graph_export.py export or visualize accordingly rather than attempting a seed-bounded analyze call over every node.",
+      "files": [],
+      "expectations": [
+        "Explicitly notes that whole-graph scope covers everything ever fetched or noted, not just the current project",
+        "Does not attempt to pass every node id into research_graph_analyze as a workaround",
+        "Calls shared/scripts/graph_export.py via Bash rather than reimplementing export/visualization logic inline",
+        "Asks whether the user wants a raw export (cypher_json/graphml) or a PNG visualization if not already specified"
+      ]
+    }
+  ]
+}
