@@ -29,10 +29,10 @@ def _wait_for_lock(lock_file: Path, timeout: float = 10.0) -> lifecycle.LockEntr
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         entry = lifecycle.read_lock(lock_file)
-        if entry is not None and entry.get("port") is not None:
+        if entry is not None and lifecycle.is_live(entry):
             return entry
         time.sleep(0.1)
-    raise TimeoutError("server never wrote a live lock")
+    raise TimeoutError("server never became live")
 
 
 def test_server_binds_writes_lock_and_serves_a_real_call(tmp_path):

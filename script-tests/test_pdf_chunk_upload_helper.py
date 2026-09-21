@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import anyio
 import pdf_chunk_upload_helper as helper
 import pytest
+from _mcp_client import client as _mcp_client_factory
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
 
@@ -111,7 +112,7 @@ def test_main_prints_format_alias_not_field_name(
 
 
 async def _call_with_unknown_session() -> None:
-    async with Client(transport=helper.app(), timeout=60) as client:
+    async with _mcp_client_factory() as client:
         await client.call_tool(
             "research_localfile_upload_chunk",
             arguments={

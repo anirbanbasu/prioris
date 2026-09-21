@@ -134,3 +134,18 @@ def test_connect_or_spawn_waits_on_an_in_flight_claim_instead_of_spawning(
     finally:
         entry = lifecycle.read_lock(lock_file)
         _kill(entry["pid"] if entry else None)
+
+
+def test_client_reuses_the_same_canonical_server_across_calls():
+    import anyio
+    from _mcp_client import client
+
+    async def _two_urls() -> tuple[str, str]:
+        async with client() as c1:
+            url1 = c1.transport.url
+        async with client() as c2:
+            url2 = c2.transport.url
+        return url1, url2
+
+    url1, url2 = anyio.run(_two_urls)
+    assert url1 == url2

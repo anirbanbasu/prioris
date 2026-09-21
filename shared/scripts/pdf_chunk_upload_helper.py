@@ -1,10 +1,11 @@
 """Upload a local PDF to prioris-mcp via the three-phase chunked-upload flow.
 
 Drives research_localfile_begin_upload -> research_localfile_upload_chunk (looped) ->
-research_localfile_finalize_upload itself, as its own in-process fastmcp client against the
-same prioris_mcp.server.app() instance .mcp.json launches - so the base64 of every chunk stays
-inside this script's own memory and never has to pass through the calling agent's context. Only
-the final result (or a one-line error) is printed. See ../local-file-handling.md.
+research_localfile_finalize_upload itself, as its own fastmcp Client instance reaching the one
+canonical prioris-mcp server via _mcp_client.client()'s connect-or-spawn (see
+_mcp_server_lifecycle.py) - so the base64 of every chunk stays inside this script's own memory
+and never has to pass through the calling agent's context. Only the final result (or a one-line
+error) is printed. See ../local-file-handling.md.
 
 Usage:
     uv run --project <plugin root> python shared/scripts/pdf_chunk_upload_helper.py <path-to-pdf> [--filename NAME]
@@ -20,25 +21,17 @@ file's actual content, not something fixable by re-encoding it differently.
 
 import argparse
 import base64
-import os
 import sys
 from pathlib import Path
 
-# Must precede importing prioris_mcp: its RichHandler-based logging.basicConfig() (configured at
-# import time, from PRIORIS_MCP_LOG_LEVEL) writes to stdout by default, which would otherwise mix
-# server log lines into the one JSON line this script promises on stdout. Only overridden if the
-# caller hasn't already set a level explicitly.
-os.environ.setdefault("PRIORIS_MCP_LOG_LEVEL", "WARNING")
-
 import anyio
-from fastmcp import Client
+from _mcp_client import client as _client
 from fastmcp.exceptions import ToolError
 from prioris_mcp.models.localfile import (
     LocalFileBeginUploadResult,
     LocalFileFetchResult,
     LocalFileUploadChunkResult,
 )
-from prioris_mcp.server import app
 from pydantic import ValidationError
 
 PDF_MAGIC_PREFIX = b"%PDF-"
@@ -85,7 +78,7 @@ def chunk_base64(encoded: str, max_chunk_bytes: int) -> list[str]:
 
 async def upload(content: bytes, filename: str | None) -> LocalFileFetchResult:
     encoded = base64.b64encode(content).decode("ascii")
-    async with Client(transport=app(), timeout=60) as client:
+    async with _client() as client:
         try:
             begin_result = await client.call_tool(
                 "research_localfile_begin_upload", arguments={"filename": filename}
