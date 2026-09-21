@@ -29,7 +29,7 @@ uv run --project <plugin root> python -c "<snippet>"
 - **`manage_arxiv.py {search|list-top-n|fetch-metadata|categories} ...`** — deterministic CLI wrapper around arXiv's tools plus `research://arxiv/categories`; `categories` supports an exact `--code` lookup or a `--query` name filter instead of reading the whole resource into context.
 - **`manage_europepmc.py {search|fetch-metadata} ...`** — deterministic CLI wrapper around Europe PMC's tools, looping `next_cursor_mark` pagination itself (`--all`).
 - **`_mcp_client.py`** — not invoked directly; shared `fastmcp` client (connect-or-spawn against the one canonical server, see `_mcp_server_lifecycle.py`) + validate-or-exit helpers (`call_tool`, `read_resource`) that every `manage_*.py` script above imports, factored out of what `pdf_chunk_upload_helper.py` originally did inline.
-- **`_mcp_server_lifecycle.py`** — not invoked directly; lock-file/port primitives and `connect_or_spawn()`, shared by `_mcp_client.py` and `mcp_stdio_proxy.py`.
+- **`_mcp_server_lifecycle.py`** — not invoked directly; `connect_or_spawn()` plus the `fcntl.flock`-based spawn mutex and lock/port primitives it rests on, shared by `_mcp_client.py` and `mcp_stdio_proxy.py`.
 - **`mcp_http_server.py`** — not invoked directly by any skill; spawned on demand by `connect_or_spawn()` as the one canonical prioris-mcp HTTP server.
 - **`mcp_stdio_proxy.py`** — not invoked directly by any skill; `.mcp.json`'s actual entry point, relaying MCP-over-stdio to the canonical server.
 - **`extract_identifier.py <url-or-doi>`** — extract `{"provider": ..., "identifier": ...}` from a paper URL or bare DOI. See `../url-handling.md`.
