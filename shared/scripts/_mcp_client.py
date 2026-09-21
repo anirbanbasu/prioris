@@ -35,6 +35,30 @@ def client() -> Client:
     return Client(transport=app(), timeout=60)
 
 
+def _unwrap_fastmcp_result(result: object) -> object | None:
+    """The payload inside FastMCP's `{"result": ...}` envelope, or None if not enveloped.
+
+    FastMCP 4.x cannot express a discriminated-union return type (prioris_mcp's
+    research_graph_query/research_graph_analyze) as a top-level MCP output schema, so it marks
+    such tools `x-fastmcp-wrap-result` and ships the payload as `{"result": {...}}`, flagging
+    the wrapping in the call result's `_meta` as `{"fastmcp": {"wrap_result": True}}`. That flag
+    - not the envelope's shape - is what we key on, so a tool whose genuine payload happens to
+    be a lone `result` field is never mistaken for an envelope.
+
+    `result.data` looks like it should solve this, but it is not reliable here: fastmcp hands
+    back an internal `Root` wrapper model rather than a plain dict for some plain-return-type
+    tools (research_notes_create/research_notes_search), which pydantic then refuses.
+    """
+    meta = getattr(result, "meta", None) or {}
+    fastmcp_meta = meta.get("fastmcp") if isinstance(meta, Mapping) else None
+    if not (isinstance(fastmcp_meta, Mapping) and fastmcp_meta.get("wrap_result")):
+        return None
+    content = getattr(result, "structured_content", None)
+    if not (isinstance(content, Mapping) and "result" in content):
+        return None
+    return content["result"]
+
+
 @overload
 async def call_tool[ModelT: BaseModel](
     active_client: Client,
@@ -73,6 +97,12 @@ async def call_tool[ModelT: BaseModel](
     try:
         return model.model_validate(result.structured_content)
     except ValidationError as exc:
+        unwrapped = _unwrap_fastmcp_result(result)
+        if unwrapped is not None:
+            try:
+                return model.model_validate(unwrapped)
+            except ValidationError:
+                pass  # fall through and report the original, un-unwrapped error
         sys.exit(f"unexpected response shape from prioris-mcp: {exc}")
 
 
