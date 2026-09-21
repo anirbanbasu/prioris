@@ -4,8 +4,10 @@
       "command": "uv",
       "args": [
         "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
         "python",
-        "shared/scripts/mcp_stdio_proxy.py"
+        "${CLAUDE_PLUGIN_ROOT}/shared/scripts/mcp_stdio_proxy.py"
       ]
     }
   }

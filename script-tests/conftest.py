@@ -13,17 +13,27 @@ import os
 import shutil
 import tempfile
 import time
+from pathlib import Path
 
 import pytest
 
-_TEST_STORAGE_DIR = tempfile.mkdtemp(prefix="prioris-mcp-script-tests-")
-os.environ["PRIORIS_MCP_STORAGE_DIR"] = _TEST_STORAGE_DIR
-_TEST_NOTES_DIR = tempfile.mkdtemp(prefix="prioris-mcp-script-tests-notes-")
-os.environ["PRIORIS_MCP_NOTES_DIR"] = _TEST_NOTES_DIR
-_TEST_VECTOR_DIR = tempfile.mkdtemp(prefix="prioris-mcp-script-tests-vectors-")
-os.environ["PRIORIS_MCP_VECTOR_DIR"] = _TEST_VECTOR_DIR
-_TEST_GRAPH_DIR = tempfile.mkdtemp(prefix="prioris-mcp-script-tests-graph-")
-os.environ["PRIORIS_MCP_GRAPH_DIR"] = _TEST_GRAPH_DIR
+# One session root with the four data dirs *nested under it*, not four independent
+# mkdtemp()s. _mcp_server_lifecycle.default_lock_path() derives the canonical server's lock
+# from `Path(PRIORIS_MCP_GRAPH_DIR).parent`, so with independent temp dirs that parent was
+# literally /tmp - putting this session's lock and log at the shared, world-writable
+# /tmp/mcp-server.{lock,log}, where concurrent pytest runs would fight over them and the log
+# would grow forever because nothing ever cleaned it up. Nested, they land at
+# _TEST_ROOT/mcp-server.{lock,log} and die with the root in pytest_sessionfinish.
+_TEST_ROOT = Path(tempfile.mkdtemp(prefix="prioris-mcp-script-tests-"))
+for _var, _sub in (
+    ("PRIORIS_MCP_STORAGE_DIR", "storage"),
+    ("PRIORIS_MCP_NOTES_DIR", "notes"),
+    ("PRIORIS_MCP_VECTOR_DIR", "vectors"),
+    ("PRIORIS_MCP_GRAPH_DIR", "graph"),
+):
+    _dir = _TEST_ROOT / _sub
+    _dir.mkdir(parents=True, exist_ok=True)
+    os.environ[_var] = str(_dir)
 os.environ.setdefault("PRIORIS_MCP_LOG_LEVEL", "WARNING")
 
 
@@ -38,10 +48,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline and lifecycle._pid_alive(pid):
             time.sleep(0.1)
-    shutil.rmtree(_TEST_STORAGE_DIR, ignore_errors=True)
-    shutil.rmtree(_TEST_NOTES_DIR, ignore_errors=True)
-    shutil.rmtree(_TEST_VECTOR_DIR, ignore_errors=True)
-    shutil.rmtree(_TEST_GRAPH_DIR, ignore_errors=True)
+    shutil.rmtree(_TEST_ROOT, ignore_errors=True)
 
 
 @pytest.fixture
