@@ -8,9 +8,11 @@ under test). pytest imports conftest.py before any test_*.py in this directory, 
 only point early enough.
 """
 
+import contextlib
 import os
 import shutil
 import tempfile
+import time
 
 import pytest
 
@@ -26,6 +28,16 @@ os.environ.setdefault("PRIORIS_MCP_LOG_LEVEL", "WARNING")
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    import _mcp_server_lifecycle as lifecycle
+
+    entry = lifecycle.read_lock(lifecycle.default_lock_path())
+    pid = entry.get("pid") if entry is not None else None
+    if pid is not None:
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(pid, 15)
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and lifecycle._pid_alive(pid):
+            time.sleep(0.1)
     shutil.rmtree(_TEST_STORAGE_DIR, ignore_errors=True)
     shutil.rmtree(_TEST_NOTES_DIR, ignore_errors=True)
     shutil.rmtree(_TEST_VECTOR_DIR, ignore_errors=True)
