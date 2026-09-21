@@ -1,0 +1,41 @@
+{
+  "skill_name": "graph-backfill",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Backfill the graph.",
+      "expected_output": "Asks whether to backfill documents, notes, or both, and whether to scope to this project or everything on the server, then runs research_list_fetched and/or research_notes_search and calls graph_structural_sync.py per item, reporting counts.",
+      "files": [],
+      "expectations": [
+        "Asks the Step 1 scoping question before doing anything, since $ARGUMENTS gives no scope",
+        "Never asks the user to approve an individual upsert/link write - this skill's writes are purely mechanical",
+        "Calls shared/scripts/graph_structural_sync.py via Bash rather than reimplementing the upsert/link logic inline",
+        "Reports a count of documents linked, notes linked, and how many edges were newly created vs already present"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "My notes on arxiv 2401.12345 aren't showing up when I explore the graph.",
+      "expected_output": "Scopes the backfill to that one paper's notes, calls research_notes_search filtered to that identifier, then graph_structural_sync.py link for each matching note, and reports which were newly created vs already existed.",
+      "files": [],
+      "expectations": [
+        "Scopes to arxiv 2401.12345 specifically rather than running a full backfill",
+        "Uses research_notes_search with provider=arxiv and canonical_identifier=2401.12345",
+        "Calls graph_structural_sync.py link with --to-ref-id arxiv:2401.12345 for every matching note",
+        "Does not claim notes were linked if the script's own 'created' field says they already existed"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Link everything I've fetched into the graph, this project only.",
+      "expected_output": "Interprets 'fetched' as documents, calls research_list_fetched, upserts a Pointer per distinct (provider, identifier), and asks (rather than assumes) whether notes should also be included since the user only mentioned documents.",
+      "files": [],
+      "expectations": [
+        "Scopes document enumeration to research_list_fetched grouped by (provider, identifier), not a raw flat list",
+        "Asks whether notes should also be backfilled, since the user's phrasing ('everything I've fetched') is ambiguous about notes",
+        "Applies project scoping via project_tag.py rather than backfilling every project's documents",
+        "Reports the final count of documents linked"
+      ]
+    }
+  ]
+}
