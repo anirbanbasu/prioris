@@ -17,9 +17,7 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
-# TEMP: pinned to PR #46 (feature/graph-backend) to prototype against the graph search backend.
-# Revert to the default branch once the PR merges or this exploration wraps up.
-prioris-mcp = { git="https://github.com/anirbanbasu/prioris-mcp", branch="feature/graph-backend"}
+prioris-mcp = { git="https://github.com/anirbanbasu/prioris-mcp" }
 
 [dependency-groups]
 dev = [

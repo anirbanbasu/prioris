@@ -1689,7 +1689,7 @@ wheels = [
 [[package]]
 name = "prioris-mcp"
 version = "0.2.1"
-source = { git = "https://github.com/anirbanbasu/prioris-mcp?branch=feature%2Fgraph-backend#96ce991d0a1a6438e8754631e2a60bd239f2f0e1" }
+source = { git = "https://github.com/anirbanbasu/prioris-mcp#fe022ade1b4e64f1b7675f0ef5f62720ee1c7968" }
 dependencies = [
     { name = "anyio" },
     { name = "defusedxml" },
@@ -1731,7 +1731,7 @@ test = [
 requires-dist = [
     { name = "fastmcp", specifier = ">=4.0.5" },
     { name = "matplotlib", specifier = ">=3.10" },
-    { name = "prioris-mcp", git = "https://github.com/anirbanbasu/prioris-mcp?branch=feature%2Fgraph-backend" },
+    { name = "prioris-mcp", git = "https://github.com/anirbanbasu/prioris-mcp" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]
 
