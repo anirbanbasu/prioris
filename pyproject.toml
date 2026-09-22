@@ -7,6 +7,7 @@ dependencies = [
     "prioris-mcp",
     "pyyaml>=6.0",
     "fastmcp>=4.0.5",
+    "matplotlib>=3.10",
 ]
 
 [tool.uv]
@@ -16,7 +17,7 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
-prioris-mcp = { git="https://github.com/anirbanbasu/prioris-mcp"}
+prioris-mcp = { git="https://github.com/anirbanbasu/prioris-mcp" }
 
 [dependency-groups]
 dev = [

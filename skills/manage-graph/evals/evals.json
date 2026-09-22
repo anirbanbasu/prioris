@@ -1,0 +1,42 @@
+{
+  "skill_name": "manage-graph",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Merge 'gradient checkpointing' into 'activation checkpointing'.",
+      "expected_output": "Finds both concepts via find_concepts, confirms which is absorbed (A) and which survives (B), adds A's label to B's aliases, runs graph_edge_migrate.py with --delete-old, and reports the migrated edge count.",
+      "files": [],
+      "expectations": [
+        "Resolves both concept names to node ids via find_concepts before doing anything",
+        "Confirms with the user which concept is being absorbed and which survives before writing anything",
+        "Calls update_concept to add the absorbed concept's label to the surviving concept's aliases",
+        "Calls graph_edge_migrate.py migrate with --delete-old rather than reimplementing edge re-pointing inline",
+        "Reports how many edges were migrated"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Delete the concept 'foo bar', it was a mistake.",
+      "expected_output": "Finds the concept, counts its incident edges via neighbors, confirms the exact node and edge count with the user, then calls research_graph_write op=delete_node.",
+      "files": [],
+      "expectations": [
+        "Resolves 'foo bar' to a node id via find_concepts rather than guessing",
+        "Counts incident edges via neighbors before asking for confirmation",
+        "States the specific edge count in the confirmation prompt, not a generic 'are you sure'",
+        "Only calls delete_node after explicit confirmation"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Promote the stub for arxiv:2401.12345 now that I've fetched it.",
+      "expected_output": "Resolves the real Pointer via upsert_pointer, confirms the stub concept and its edge count with the user, then runs graph_edge_migrate.py with --delete-old to move the stub's edges onto the real Pointer.",
+      "files": [],
+      "expectations": [
+        "Resolves the fetched document's real Pointer node id via upsert_pointer(ref_type=document, ref_id=arxiv:2401.12345)",
+        "Finds the stub concept via find_concepts on the paper's title, then verifies the match via metadata.stub_identifier, rather than asking the user to supply a node id blind or promoting on a title match alone",
+        "Confirms the promotion and edge count before running the migration",
+        "Calls graph_edge_migrate.py migrate --delete-old rather than manually deleting the stub without migrating its edges first"
+      ]
+    }
+  ]
+}

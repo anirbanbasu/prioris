@@ -205,3 +205,4 @@ docs/superpowers
 tmp/
 coverage.json
 .prioris/
+tmp-*

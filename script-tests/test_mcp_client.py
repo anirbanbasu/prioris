@@ -84,6 +84,50 @@ def test_call_tool_exits_on_validation_error(monkeypatch: pytest.MonkeyPatch) ->
         anyio.run(run)
 
 
+def test_call_tool_exits_when_wrap_result_flagged_but_no_result_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_call_tool(
+        self: Client, name: str, arguments: dict | None = None, **kwargs: object
+    ) -> object:
+        return SimpleNamespace(
+            meta={"fastmcp": {"wrap_result": True}},
+            structured_content={"unexpected": "shape"},
+            data=None,
+        )
+
+    monkeypatch.setattr(Client, "call_tool", fake_call_tool)
+
+    async def run() -> object:
+        async with helper.client() as c:
+            return await helper.call_tool(c, "some_tool", {}, _Widget)
+
+    with pytest.raises(SystemExit, match="unexpected response shape"):
+        anyio.run(run)
+
+
+def test_call_tool_exits_when_wrapped_payload_also_fails_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_call_tool(
+        self: Client, name: str, arguments: dict | None = None, **kwargs: object
+    ) -> object:
+        return SimpleNamespace(
+            meta={"fastmcp": {"wrap_result": True}},
+            structured_content={"result": {"still": "wrong"}},
+            data=None,
+        )
+
+    monkeypatch.setattr(Client, "call_tool", fake_call_tool)
+
+    async def run() -> object:
+        async with helper.client() as c:
+            return await helper.call_tool(c, "some_tool", {}, _Widget)
+
+    with pytest.raises(SystemExit, match="unexpected response shape"):
+        anyio.run(run)
+
+
 def test_read_resource_returns_validated_model(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_read_resource(
         self: Client, uri: str, **kwargs: object

@@ -1,0 +1,55 @@
+{
+  "skill_name": "graph-extract",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Extract concepts from arxiv 2401.12345.",
+      "expected_output": "Dispatches document-reader for a proposed concept/relation delta, runs find_concepts per candidate, presents choices via AskUserQuestion across multiple rounds, and only calls research_graph_write after explicit approval for each write.",
+      "files": [],
+      "expectations": [
+        "Dispatches document-reader rather than fetching/parsing full text itself",
+        "Calls find_concepts for every candidate concept before deciding new vs alias vs skip",
+        "Uses at least two separate AskUserQuestion rounds (candidate selection, then properties/relation details) before any write",
+        "Does not call research_graph_write until the user has approved that specific write",
+        "Reports which concepts/edges were actually written, distinct from any declined during review"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "What concepts does my note about the RAPTOR paper touch?",
+      "expected_output": "Reads the note's text directly via research_notes_read rather than dispatching document-reader, proposes concepts/relations grounded in the note's own wording, and checks for any Pointer-to-Pointer references to other documents named in the note.",
+      "files": [],
+      "expectations": [
+        "Resolves 'my note about the RAPTOR paper' via research_notes_search rather than assuming a note id",
+        "Reads the note directly (research_notes_read), not via document-reader, since the source is a note",
+        "Considers whether the note's text names another document, proposing a references edge if so",
+        "Still runs the full find-or-create and approval flow before any write"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add the 'gradient checkpointing' concept from this paper, but don't duplicate it if it's already there under a different name.",
+      "expected_output": "Calls find_concepts('gradient checkpointing'), surfaces a near-duplicate candidate like 'activation checkpointing' if one exists, and asks the user whether to alias onto it rather than creating a new concept.",
+      "files": [],
+      "expectations": [
+        "Calls find_concepts before create_concept, never creates without checking first",
+        "Presents any fuzzy-matched existing concept as an explicit alias-or-new choice via AskUserQuestion",
+        "If the user picks alias, calls update_concept adding the new label to aliases, and never overwrites the existing label field",
+        "Does not silently decide the match is 'close enough' or 'not close enough' - the user always picks"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Extract concepts from arxiv 2401.99999 — I already extracted from an earlier version of this paper.",
+      "expected_output": "Runs the normal extraction flow, and if a write raises a metadata_conflict error (e.g. re-touching a concept's metadata with a differing value for an existing key), surfaces the conflicting key(s) and both values via AskUserQuestion (keep existing / use new / merge) rather than letting the raw error reach the user, then re-issues the write.",
+      "files": [],
+      "expectations": [
+        "Does not present a raw ToolError/metadata_conflict message to the user unhandled",
+        "Names the specific conflicting metadata key(s) and both candidate values when asking how to resolve",
+        "Re-issues the write with the user's chosen resolution rather than abandoning the write silently",
+        "Only proceeds to the next concept/edge after this one is resolved, not in parallel",
+        "Checks neighbors() for an existing edge with the same relation_type/to_id before calling create_edge for any approved relation, skipping the create_edge call if one already exists from the earlier extraction"
+      ]
+    }
+  ]
+}

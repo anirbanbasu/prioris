@@ -4,7 +4,10 @@
       "command": "uv",
       "args": [
         "run",
-        "prioris-mcp"
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "python",
+        "${CLAUDE_PLUGIN_ROOT}/shared/scripts/mcp_stdio_proxy.py"
       ]
     }
   }
