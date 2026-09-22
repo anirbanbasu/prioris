@@ -10,14 +10,23 @@ from fastmcp.client.transports import PythonStdioTransport
 _SCRIPT = Path(__file__).parent.parent / "shared" / "scripts" / "mcp_stdio_proxy.py"
 
 
-def test_proxy_relays_a_real_tool_call_over_stdio_to_the_canonical_server():
+def test_proxy_relays_a_real_tool_call_over_stdio_to_the_canonical_server(tmp_path):
     async def _call():
         # mcp's stdio_client only forwards a small safe-list of env vars (HOME, PATH, etc.)
         # to a spawned subprocess unless an explicit env is given - Client(str(_SCRIPT)) alone
         # would silently drop conftest.py's PRIORIS_MCP_GRAPH_DIR/etc. overrides, so the proxy
         # subprocess would fall back to the real default data dir instead of sharing this
         # session's canonical server. Pass the full parent env through explicitly.
-        transport = PythonStdioTransport(script_path=_SCRIPT, env=dict(os.environ))
+        #
+        # log_file must be a real file, not fastmcp's default of sys.stderr: it's handed to
+        # subprocess.Popen(stderr=...), which needs a real fileno(). Under pytest's
+        # --capture=tee-sys (as CI runs), sys.stderr is a fileno-less TeeCaptureIO, so the
+        # default raises "UnsupportedOperation: fileno" while connecting.
+        transport = PythonStdioTransport(
+            script_path=_SCRIPT,
+            env=dict(os.environ),
+            log_file=tmp_path / "proxy-stderr.log",
+        )
         async with Client(transport) as c:
             return await c.call_tool(
                 "research_graph_write",
@@ -54,7 +63,11 @@ def test_proxy_respawns_the_canonical_server_after_it_idle_times_out(tmp_path):
     }
 
     async def _call() -> tuple[int, int]:
-        transport = PythonStdioTransport(script_path=_SCRIPT, env=env)
+        transport = PythonStdioTransport(
+            script_path=_SCRIPT,
+            env=env,
+            log_file=tmp_path / "proxy-stderr.log",
+        )
         async with Client(transport, timeout=90) as c:
             first = await c.call_tool(
                 "research_graph_write",
