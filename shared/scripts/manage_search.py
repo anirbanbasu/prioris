@@ -13,8 +13,9 @@ Usage:
         [--all] [--max-pages N] [--min-score FLOAT] [--attach-titles] [--root PATH]
 
 Prints {"fts": {"matches": [...], "total": N}, "vector": {...}, "index_status": {...}} (each of
-fts/vector present only when --mode requested it), aggregated across pages if `--all` (loops each
-populated block's own offset until has_more is false or --max-pages, default 20, is hit).
+fts/vector present only when --mode requested it), aggregated across pages if `--all` (loops one
+shared offset, applied to every populated block on each page, until has_more is false or
+--max-pages, default 20, is hit).
 `--min-score` drops any match (fts or vector) whose score is below it - required practice for
 vector/hybrid mode per mcp-contracts.md's "Vector/KNN search is unthresholded" caveat, applied
 uniformly to fts matches too since SearchMatch/VectorSearchMatch both carry a `score` field.

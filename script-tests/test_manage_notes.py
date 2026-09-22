@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -502,16 +503,11 @@ def test_search_mode_vector(
     assert output["index_status"]["vector"] == "ready"
 
 
-def test_main_function(capsys: pytest.CaptureFixture) -> None:
+def test_main_function(
+    capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Test that main() function works correctly
-    import sys as sys_module
-
-    # Mock sys.argv and call main
-    original_argv = sys_module.argv
-    try:
-        sys_module.argv = ["manage_notes.py", "search"]
-        # main() should return 0 on success
-        result = mn.main()
-        assert result == 0
-    finally:
-        sys_module.argv = original_argv
+    monkeypatch.setattr(sys, "argv", ["manage_notes.py", "search"])
+    # main() should return 0 on success
+    result = mn.main()
+    assert result == 0

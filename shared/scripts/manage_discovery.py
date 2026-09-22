@@ -18,7 +18,8 @@ field, needs_condensation: true if its abstract is non-null and exceeds 300 word
 verbatim-vs-condense threshold (see rmotd/SKILL.md) - false otherwise (including a null abstract,
 which rmotd instead reports as "not available" rather than condensing). `--include-work-types`
 additionally reads research://openalex/work-types once and adds work_type_name/
-work_type_description to every hit whose work_type is non-null. `--all` loops `page` from 1
+work_type_description (null when work_type is missing or not a known OpenAlex code) to every
+hit. `--all` loops `page` from 1
 until has_more is false or --max-pages (default 5, since search.semantic caps at 50 total matches)
 is hit, aggregating hits; `page`/`has_more` in the output then describe the last page fetched.
 """
@@ -73,15 +74,16 @@ async def run(args: argparse.Namespace) -> int:
             for hit in result.hits:
                 hit_dict = hit.model_dump(by_alias=True, mode="json")
                 hit_dict["needs_condensation"] = _needs_condensation(hit.abstract)
-                if (
-                    args.include_work_types
-                    and hit.work_type is not None
-                    and hit.work_type in work_types
-                ):
-                    hit_dict["work_type_name"] = work_types[hit.work_type]["name"]
-                    hit_dict["work_type_description"] = work_types[hit.work_type][
-                        "description"
-                    ]
+                if args.include_work_types:
+                    known = (
+                        work_types.get(hit.work_type)
+                        if hit.work_type is not None
+                        else None
+                    )
+                    hit_dict["work_type_name"] = known["name"] if known else None
+                    hit_dict["work_type_description"] = (
+                        known["description"] if known else None
+                    )
                 all_hits.append(hit_dict)
 
             if not args.all or not result.has_more:
@@ -94,7 +96,10 @@ async def run(args: argparse.Namespace) -> int:
                 break
             page += 1
 
-    assert last_result is not None
+    if (
+        last_result is None
+    ):  # pragma: no cover - the while-loop above always assigns first
+        raise RuntimeError("research_discovery loop exited without fetching a page")
     output = {
         "hits": all_hits,
         "page": last_result.page,

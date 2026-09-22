@@ -99,7 +99,7 @@ async def cmd_categories(args: argparse.Namespace) -> int:
     if args.code is not None:
         for category in result.categories:
             if category.code == args.code:
-                print(category.model_dump_json())
+                print(category.model_dump_json(by_alias=True))
                 return 0
         sys.exit(f"no arXiv category with code {args.code!r}")
 
@@ -107,7 +107,7 @@ async def cmd_categories(args: argparse.Namespace) -> int:
     if args.query is not None:
         needle = args.query.lower()
         categories = [c for c in categories if needle in c.name.lower()]
-    print(json.dumps([c.model_dump(mode="json") for c in categories]))
+    print(json.dumps([c.model_dump(mode="json", by_alias=True) for c in categories]))
     return 0
 
 
