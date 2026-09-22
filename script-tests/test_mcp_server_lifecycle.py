@@ -347,6 +347,32 @@ def test_spawned_server_is_reaped_rather_than_left_as_a_zombie(tmp_path, monkeyp
     assert _proc_state(pid) != "Z", "server was left as an unreaped zombie"
 
 
+def test_pid_alive_treats_a_permission_error_as_alive(monkeypatch):
+    """A pid owned by another user still answers kill(pid, 0) with EPERM, not ESRCH - that
+    means it exists, just not ours to signal."""
+
+    def _raise_permission_error(pid: int, sig: int) -> None:
+        raise PermissionError
+
+    monkeypatch.setattr(lifecycle.os, "kill", _raise_permission_error)
+    assert lifecycle._pid_alive(12345) is True
+
+
+def test_port_open_false_when_nothing_is_listening():
+    assert lifecycle._port_open(lifecycle.find_free_port()) is False
+
+
+def test_connect_or_spawn_times_out_while_the_claim_stays_held(tmp_path):
+    lock_file = tmp_path / "mcp-server.lock"
+    claim_fd = lifecycle.try_claim(lock_file)
+    assert claim_fd is not None
+    try:
+        with pytest.raises(RuntimeError, match="did not become ready"):
+            lifecycle.connect_or_spawn(lock_file=lock_file, timeout=0.1)
+    finally:
+        os.close(claim_fd)
+
+
 def _proc_state(pid: int) -> str | None:
     """The process state letter from /proc/<pid>/stat, or None if the pid is gone."""
     try:
