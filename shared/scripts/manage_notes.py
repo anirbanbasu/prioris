@@ -30,11 +30,11 @@ Usage:
 
 `search` without `--group-by-paper` prints a reshaped view of research_notes_search's result
 ({"fts": {"notes", "total", "has_more"}|omitted, "vector": {"matches", "total", "has_more"}|
-omitted, "index_status": {...}|null}), aggregated across pages if `--all` is given (loops offset
-per populated block until has_more is false or --max-pages, default 20, is hit - a stderr warning
-notes if the cap was hit before exhaustion). Each block's `has_more` reflects the last page
-fetched for that block, same convention as `next_cursor_mark` in manage_europepmc.py's search
-output.
+omitted, "index_status": {...}|null}), aggregated across pages if `--all` is given (loops one
+shared offset, applied to every populated block on each page, until has_more is false or
+--max-pages, default 20, is hit - a stderr warning notes if the cap was hit before exhaustion).
+Each block's `has_more` reflects the last page fetched, same convention as `next_cursor_mark` in
+manage_europepmc.py's search output.
 
 `search --group-by-paper` requires `--mode fts` (the default) - vector matches carry no
 provider/canonical_identifier to group by, so this exits 1 under vector/hybrid. Prints a JSON
@@ -144,13 +144,13 @@ async def _run_search(args: argparse.Namespace) -> dict[str, Any]:
             offset += args.limit
 
         output: dict[str, Any] = {}
-        if fts_notes or args.mode in ("fts", "hybrid"):
+        if args.mode in ("fts", "hybrid"):
             output["fts"] = {
                 "notes": fts_notes,
                 "total": len(fts_notes),
                 "has_more": fts_has_more,
             }
-        if vector_matches or args.mode in ("vector", "hybrid"):
+        if args.mode in ("vector", "hybrid"):
             output["vector"] = {
                 "matches": vector_matches,
                 "total": len(vector_matches),

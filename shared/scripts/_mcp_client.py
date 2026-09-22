@@ -84,7 +84,7 @@ async def call_tool[ModelT: BaseModel](
     """
     try:
         result = await active_client.call_tool(name, arguments=dict(arguments))
-    except ToolError as exc:
+    except (ToolError, MCPError) as exc:
         sys.exit(str(exc))
     if model is None:
         return result.data
@@ -106,7 +106,7 @@ async def read_resource[ModelT: BaseModel](
     """Read `uri`'s one text block, parse it as JSON, and validate against `model`, or exit(1)."""
     try:
         contents = await active_client.read_resource(uri)
-    except MCPError as exc:
+    except (ToolError, MCPError) as exc:
         sys.exit(str(exc))
     try:
         payload = json.loads(cast(TextResourceContents, contents[0]).text)
